@@ -92,3 +92,10 @@ quarantine が付かないので、警告は出ない。
 [tritium packaging renovation](../../docs/architecture/tritium-packaging-renovation.md)
 の Phase 4 を参照（`electron-builder.yml` の `win.certificateFile` / `win.azureSignOptions`
 を差し込み、`CSC_*` を CI secret 化する設計になっている）。
+
+## Command archives
+
+The packaging flow also builds complete command archives.
+It requires `uv` with Python 3.12 or later. See the
+[command distribution guide](command-distribution.md) for installation,
+artifact names, supported targets, and update behavior.

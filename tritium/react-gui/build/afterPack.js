@@ -28,6 +28,17 @@ exports.default = async function afterPack(context) {
   // Before signing, so the seal covers it.
   console.log(`afterPack: wrote ${writeCliWrapper(context)}`);
   console.log(`afterPack: wrote ${writeCliWrapper(context, 'cuemol')}`);
+  if (process.env.CUEMOL_PACKAGE_COMMANDS === '1') {
+    const output = path.resolve(packager.projectDir, packager.config.directories.output);
+    fs.writeFileSync(path.join(output, 'command-build.json'), JSON.stringify({
+      platform: electronPlatformName,
+      arch: require('electron-builder').Arch[context.arch],
+      version: packager.info.metadata.cuemolVersion,
+      appDir: path.relative(output, appOutDir),
+      product: packager.appInfo.productFilename,
+      executable: electronPlatformName === 'win32' ? `${packager.appInfo.productFilename}.exe` : packager.executableName,
+    }, null, 2));
+  }
   if (electronPlatformName !== 'darwin') return;
 
   const appPath = path.join(appOutDir, `${packager.appInfo.productFilename}.app`);

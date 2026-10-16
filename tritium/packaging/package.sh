@@ -61,6 +61,8 @@ EB_ARGS=("$@" --config.extraMetadata.version="$SEMVER" --config.extraMetadata.cu
 if [ -n "$BUILD_NO" ]; then
   EB_ARGS+=(--config.buildVersion="$BUILD_NO")
 fi
-pnpm exec electron-builder "${EB_ARGS[@]}"
+CUEMOL_PACKAGE_COMMANDS=1 pnpm exec electron-builder "${EB_ARGS[@]}"
+uv run --no-project --python 3.12 python \
+  "$SCRIPT_DIR/package-command.py" "$REACT_GUI/release/command-build.json"
 
 echo "package: done ($*)."

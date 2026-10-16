@@ -223,6 +223,12 @@ jobs:
     # Package the tritium Electron app (macOS arm64 DMG, ad-hoc signed).
     # Runs only on the arm64 non-embed-Python leg, in full mode (develop /
     # workflow_dispatch / tags) -- not on every feature-branch push.
+    - name: Set up uv for command archives
+      if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: '3.12'
+
     - name: Package tritium (macOS arm64 DMG)
       if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
       shell: bash
@@ -238,7 +244,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: CueMol3_${{ steps.version.outputs.version }}_mac_arm64
-        path: tritium/react-gui/release/*.dmg
+        path: |
+          tritium/react-gui/release/*.dmg
+          tritium/react-gui/release/*-Command.tar.gz
+          tritium/react-gui/release/*.sha256
         if-no-files-found: error
 
     - name: Build UXP GUI
@@ -413,6 +422,12 @@ jobs:
 
     # Package the tritium Electron app (Windows x64 NSIS installer, unsigned).
     # Full mode only (develop / workflow_dispatch / tags).
+    - name: Set up uv for command archives
+      if: env.BUILD_MODE == 'full'
+      uses: astral-sh/setup-uv@v6
+      with:
+        python-version: '3.12'
+
     - name: Package tritium (Windows x64 NSIS)
       if: env.BUILD_MODE == 'full'
       shell: bash
@@ -428,7 +443,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: CueMol3_${{ steps.version.outputs.version }}_win_x64
-        path: tritium/react-gui/release/*.exe
+        path: |
+          tritium/react-gui/release/*.exe
+          tritium/react-gui/release/*-Command.tar.gz
+          tritium/react-gui/release/*.sha256
         if-no-files-found: error
 
     - name: Build and check cuetty

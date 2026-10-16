@@ -20,7 +20,8 @@ CueMol3 desktop and command line
 
 The Electron-based CueMol3 includes a unified command for GUI launch, console
 commands, MCP, agent instructions, and updates. See the
-[command guide](tritium/cli/README.md).
+[command guide](tritium/cli/README.md) and
+[distribution guide](tritium/packaging/command-distribution.md).
 
 New molecular files initially show proteins as cartoons, nucleic acids as
 ribbons, and other atoms as ball-and-stick. A saved GUI renderer choice or an
