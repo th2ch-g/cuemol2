@@ -27,15 +27,15 @@
     conf_slab = "LBUTTON|SHIFT|MOUSE_Y"
     />
 
-  <style id="PymolViewInConf" type="view" desc="Pymol"
+  <style id="PymolViewInConf" type="view" desc="PyMOL"
     conf_rotx = "LBUTTON|MOUSE_X"
     conf_roty = "LBUTTON|MOUSE_Y"
-    conf_rotz = ""
+    conf_rotz = "GES_ROTATE"
     conf_trax = "MBUTTON|MOUSE_X"
     conf_tray = "MBUTTON|MOUSE_Y"
-    conf_traz = "CTRL|WHEEL1"
-    conf_zoom = "RBUTTON|MOUSE_X,RBUTTON|MOUSE_Y,CTRL|SHIFT|WHEEL1"
-    conf_slab = "WHEEL1"
+    conf_traz = "CTRL|WHEEL1,CTRL|WHEEL2"
+    conf_zoom = "RBUTTON|MOUSE_Y,CTRL|SHIFT|WHEEL1,CTRL|SHIFT|WHEEL2,GES_PINCH"
+    conf_slab = "WHEEL1,WHEEL2"
     />
 
   <style id="IphoneViewInConf" type="view" desc="iPhone"

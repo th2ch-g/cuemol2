@@ -4,7 +4,7 @@ import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
 import { useActiveScene } from '@renderer/state/workspace';
 import { useActiveToolContext } from '@renderer/contexts/ActiveToolContext';
 import { useCueMolEventListener } from '@renderer/hooks/cuemol/useCueMolEventListener';
-import { decodeClick, INDEV_LBTN, INDEV_RBTN, INDEV_SHIFT } from '@renderer/worker/shared/inDevModif';
+import { decodeClick, INDEV_LBTN, INDEV_MBTN, INDEV_RBTN, INDEV_SHIFT } from '@renderer/worker/shared/inDevModif';
 import type { HitTestResult } from '@renderer/types';
 import { recordIncrementalSel } from '@renderer/h3-kit/MolSelList';
 
@@ -44,7 +44,9 @@ export function useNaviClickHandler({ setStatusMessage, openContextMenu }: UseNa
             const click = decodeClick(args);
             if (!click) return;
             const { x, y, mod } = click;
-            if (mod & INDEV_RBTN) {
+            if (mod === INDEV_MBTN) {
+                await cm.invokeService('naviCenterPick', { viewId, x, y });
+            } else if (mod & INDEV_RBTN) {
                 const result = await cm.invokeService('naviHitTest', { viewId, x, y });
                 if (result?.hit && result.raw && result.raw.objtype === 'MolCoord') {
                     openContextMenu(result.raw as HitTestResult, viewId);

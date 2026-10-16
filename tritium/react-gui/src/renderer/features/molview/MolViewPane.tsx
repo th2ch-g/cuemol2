@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react'
 import { useWheel } from '@use-gesture/react'
+import { isPinchWheel } from '@renderer/input/wheelGesture'
 import styles from './MolViewPane.module.css'
 import { useWorkspaceDispatch } from '@renderer/state/workspace'
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol'
@@ -46,7 +47,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
 
   // Auto device-detect: feed the wheel / gesture stream to the detector via the
   // ViewInputConfig context (these no-op unless the preference is 'auto').
-  const { feedWheelSample, noteTrackpadGesture } = useViewInputConfig()
+  const { feedWheelSample, noteTrackpadGesture, inputDevicePreference } = useViewInputConfig()
   const feedWheelRef = useRef(feedWheelSample)
   useEffect(() => { feedWheelRef.current = feedWheelSample }, [feedWheelSample])
   const noteGestureRef = useRef(noteTrackpadGesture)
@@ -160,7 +161,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
       const viewID = getActiveViewIdRef.current()
       if (viewID === undefined || !cmRef.current) return
       event.preventDefault()
-      if (event.ctrlKey) {
+      if (isPinchWheel(event, inputDevicePreference)) {
         // Chromium signals trackpad pinch as wheel + synthetic ctrlKey=true.
         // Strip that fake ctrl so the GES_PINCH binding in ViewInputConfig
         // (stored with modifier bits = 0) matches in findEvent().
@@ -208,6 +209,7 @@ export const MolViewPane = React.memo((): React.JSX.Element => {
     const canvas = canvasRef.current
     if (!canvas) return
     const handleMouse = (method: string) => (event: MouseEvent): void => {
+      if (event.button === 1) event.preventDefault()
       const viewID = getActiveViewIdRef.current()
       if (viewID !== undefined && cmRef.current) cmRef.current.onMouseEvent(viewID, method, event)
     }

@@ -25,7 +25,7 @@ import {
   DEFAULT_APBS_BINARIES,
 } from '@renderer/worker/shared/apbsTypes'
 import type { ApbsConfigKey } from '@renderer/contexts/ApbsConfigContext'
-import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS } from '@renderer/viewInputConfig'
+import { INPUT_DEVICE_PREF_OPTIONS, INPUT_DEVICE_PREF_LABELS, MOUSE_NAVIGATION_LABELS } from '@renderer/viewInputConfig'
 import { OPEN_FILE_TARGET_OPTIONS, OPEN_FILE_TARGET_LABELS } from '@renderer/data/openFileTarget'
 import type { LabelDefaults } from '@renderer/worker/server/services/view/labelDefaults'
 import type { ViewInputParams } from '@renderer/worker/server/services/view/viewInputParams'
@@ -238,10 +238,17 @@ export const SETTINGS: SettingDef[] = [
 
   // --- Input > Mouse & Navigation ---
   {
+    key: 'input.mouseNavigation',
+    label: 'Mouse controls',
+    description: 'PyMOL: wheel adjusts slab thickness, middle-click centers on an atom, middle-drag pans, and right-drag zooms. Applies when the pointing device is Mouse.',
+    category: 'input.mouse',
+    control: { kind: 'select', options: Object.values(MOUSE_NAVIGATION_LABELS) },
+  },
+  {
     key: 'input.device',
     label: 'Pointing device',
     description:
-      'How scroll input maps to navigation. Mouse: wheel zooms. ' +
+      'How scroll input maps to navigation. Mouse: uses the selected mouse controls. ' +
       'Mac trackpad: two-finger scroll pans, pinch zooms. ' +
       'Auto-detect: pick from the scroll stream (pinch/rotate force trackpad).',
     category: 'input.mouse',
@@ -352,6 +359,7 @@ export const DEFAULTS: Record<string, string | number | boolean> = {
   'tools.pdb2pqrExe': DEFAULT_APBS_BINARIES.pdb2pqrExe,
   'tools.pdb2pqrFF': DEFAULT_PDB2PQR_FF,
   'input.device': INPUT_DEVICE_PREF_LABELS.auto,
+  'input.mouseNavigation': MOUSE_NAVIGATION_LABELS.cuemol,
   'mouse.xyRotSensitivity': 0.8,
   'mouse.pickPrecision': 10.0,
   'picking.gpuPicking': true,
@@ -404,6 +412,7 @@ export const APBS_SETTING_KEYS: Record<string, ApbsConfigKey> = {
 // `values` state. SettingsPane routes this key to the context.
 
 export const INPUT_DEVICE_SETTING_KEY = 'input.device'
+export const MOUSE_NAVIGATION_SETTING_KEY = 'input.mouseNavigation'
 
 // --- Atom-label default settings ---
 // Backed by StyleManager `DefaultLabel.*` via AppSettingsContext. Maps the

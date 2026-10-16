@@ -48,6 +48,7 @@ import {
   INPUT_DEVICE_LABELS,
   INPUT_DEVICE_PREF_LABELS,
   inputDevicePreferenceFromLabel,
+  MOUSE_NAVIGATION_LABELS,
 } from '@renderer/viewInputConfig'
 import {
   CATEGORY_TREE,
@@ -58,6 +59,7 @@ import {
   RENDER_BINARY_SETTING_KEYS,
   APBS_SETTING_KEYS,
   INPUT_DEVICE_SETTING_KEY,
+  MOUSE_NAVIGATION_SETTING_KEY,
   LABEL_DEFAULT_SETTING_KEYS,
   VIEW_INPUT_PARAM_SETTING_KEYS,
   PICKING_PREF_SETTING_KEYS,
@@ -90,7 +92,7 @@ export const SettingsPane: React.FC = () => {
   const { config: apbsConfig, setValue: setApbsValue } = useApbsConfig()
   // The pointing-device preference is backed by ViewInputConfigContext
   // (persistent + live re-apply; 'auto' detects the device from the stream).
-  const { inputDevicePreference, setInputDevicePreference, effectiveDeviceMode } =
+  const { inputDevicePreference, setInputDevicePreference, effectiveDeviceMode, mouseNavigation, setMouseNavigation } =
     useViewInputConfig()
   // Atom-label defaults (DefaultLabel.*) and view-input scalars (tbrad/hitprec)
   // are user-defined style values applied live to C++ and persisted on close.
@@ -162,6 +164,10 @@ export const SettingsPane: React.FC = () => {
       // Pointing-device preference persists + re-applies via ViewInputConfigContext.
       if (key === INPUT_DEVICE_SETTING_KEY) {
         setInputDevicePreference(inputDevicePreferenceFromLabel(String(value)))
+        return
+      }
+      if (key === MOUSE_NAVIGATION_SETTING_KEY) {
+        setMouseNavigation(value === MOUSE_NAVIGATION_LABELS.pymol ? 'pymol' : 'cuemol')
         return
       }
 
@@ -237,7 +243,7 @@ export const SettingsPane: React.FC = () => {
         setTheme(value ? 'dark' : 'light')
       }
     },
-    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setLabelDefault, setViewInputParam, pickingPrefs, setEnabled, setPref, setUpdateCheck],
+    [setTheme, setBinary, setApbsValue, setInputDevicePreference, setMouseNavigation, setLabelDefault, setViewInputParam, pickingPrefs, setEnabled, setPref, setUpdateCheck],
   )
 
   // Keep the toggle in sync if theme changes externally.
@@ -400,6 +406,8 @@ export const SettingsPane: React.FC = () => {
                         : prefs[pref.pluginId]?.[pref.prefKey] ?? s.default ?? ''
                   } else if (pluginId) {
                     value = isEnabled(pluginId)
+                  } else if (s.key === MOUSE_NAVIGATION_SETTING_KEY) {
+                    value = MOUSE_NAVIGATION_LABELS[mouseNavigation]
                   } else if (s.key === INPUT_DEVICE_SETTING_KEY) {
                     value = INPUT_DEVICE_PREF_LABELS[inputDevicePreference]
                     // In auto mode, surface the currently-detected device.

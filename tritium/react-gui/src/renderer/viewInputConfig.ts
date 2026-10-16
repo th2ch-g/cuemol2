@@ -17,6 +17,18 @@
 
 export type InputDeviceMode = 'mouse' | 'trackpad'
 
+export type MouseNavigation = 'cuemol' | 'pymol'
+
+export const MOUSE_NAVIGATION_LABELS: Record<MouseNavigation, string> = {
+  cuemol: 'CueMol',
+  pymol: 'PyMOL',
+}
+
+/** Normalize a stored mouse scheme without changing the pointing-device choice. */
+export function normalizeMouseNavigation(value: unknown): MouseNavigation {
+  return value === 'pymol' ? 'pymol' : 'cuemol'
+}
+
 export const DEFAULT_INPUT_DEVICE_MODE: InputDeviceMode = 'mouse'
 
 /** View-type style ids defined in data/default_style.xml. */
@@ -32,8 +44,9 @@ const STYLE_BY_MODE: Record<InputDeviceMode, string> = {
  * @param mode - the pointing-device mode
  * @returns the comma-joined style name passed to setViewInputConfigStyle
  */
-export function viewInputStyleName(mode: InputDeviceMode): string {
-  return `${STYLE_BY_MODE[mode]},UserViewConf`
+export function viewInputStyleName(mode: InputDeviceMode, mouseNavigation: MouseNavigation = 'cuemol'): string {
+  const style = mode === 'mouse' && mouseNavigation === 'pymol' ? 'PymolViewInConf' : STYLE_BY_MODE[mode]
+  return `${style},UserViewConf`
 }
 
 /** Human-facing labels shown in the settings select. */

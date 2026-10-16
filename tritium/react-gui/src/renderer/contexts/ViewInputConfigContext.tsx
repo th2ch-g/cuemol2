@@ -34,12 +34,16 @@ import {
   normalizeInputDeviceMode,
   normalizeInputDevicePreference,
   viewInputStyleName,
+  normalizeMouseNavigation,
+  type MouseNavigation,
 } from '@renderer/viewInputConfig'
 import { InputDeviceDetector } from '@renderer/input/inputDeviceDetector'
 import type { WheelSample } from '@renderer/input/wheelDeviceClassifier'
 import { useStaleGuard } from '@renderer/hooks/react/useStaleGuard'
 
 interface ViewInputConfigContextValue {
+  mouseNavigation: MouseNavigation
+  setMouseNavigation: (scheme: MouseNavigation) => void
   /** Persisted preference (mouse / trackpad / auto). */
   inputDevicePreference: InputDevicePreference
   /** Update the preference: persist it and re-apply / start detecting. */
@@ -63,6 +67,9 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
   children,
 }) => {
   const { cm } = useCueMol()
+  const [mouseNavigation, setNavigation] = useState<MouseNavigation>('cuemol')
+  const navigationRef = useRef(mouseNavigation)
+  navigationRef.current = mouseNavigation
   const [inputDevicePreference, setPreference] = useState<InputDevicePreference>(
     DEFAULT_INPUT_DEVICE_PREFERENCE,
   )
@@ -94,7 +101,7 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
       lastAppliedRef.current = mode
       setEffective(mode)
       setDeviceSwitch((p) => ({ mode, seq: p.seq + 1 }))
-      cm?.setViewInputConfigStyle(viewInputStyleName(mode)).catch(() => {})
+      cm?.setViewInputConfigStyle(viewInputStyleName(mode, navigationRef.current)).catch(() => {})
     },
     [cm],
   )
@@ -112,6 +119,9 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
         const seed =
           pref === 'auto' ? normalizeInputDeviceMode(ui.inputDeviceDetected) : pref
         setPreference(pref)
+        const scheme = normalizeMouseNavigation(ui.mouseNavigation)
+        setNavigation(scheme)
+        navigationRef.current = scheme
         setEffective(seed)
         lastAppliedRef.current = seed
         detectorRef.current!.reset(seed)
@@ -136,6 +146,13 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
     },
     [applyEffective],
   )
+
+  const setMouseNavigation = useCallback((scheme: MouseNavigation) => {
+    setNavigation(scheme)
+    navigationRef.current = scheme
+    void window.electronAPI?.invoke(IPC.UI_SAVE, { mouseNavigation: scheme })
+    void cm?.setViewInputConfigStyle(viewInputStyleName(lastAppliedRef.current, scheme)).catch(() => {})
+  }, [cm])
 
   /** Route a detector result: re-apply + remember the detected device. */
   const handleDetected = useCallback(
@@ -162,6 +179,8 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
 
   const value = useMemo<ViewInputConfigContextValue>(
     () => ({
+      mouseNavigation,
+      setMouseNavigation,
       inputDevicePreference,
       setInputDevicePreference,
       effectiveDeviceMode,
@@ -170,6 +189,8 @@ export const ViewInputConfigProvider: React.FC<{ children: React.ReactNode }> = 
       noteTrackpadGesture,
     }),
     [
+      mouseNavigation,
+      setMouseNavigation,
       inputDevicePreference,
       setInputDevicePreference,
       effectiveDeviceMode,

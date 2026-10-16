@@ -5,6 +5,7 @@ import {
     normalizeInputDeviceMode,
     normalizeInputDevicePreference,
     viewInputStyleName,
+    normalizeMouseNavigation,
 } from './viewInputConfig'
 
 // Create a CueMol instance and initialize the underlying C++ library.
@@ -31,14 +32,16 @@ export async function createAndInitCueMol(): Promise<AsyncCueMol> {
     // seed with the last detected device (the renderer detector corrects it
     // live on the first wheel); mouse/trackpad pin the preset directly.
     let seed = DEFAULT_INPUT_DEVICE_MODE
+    let mouseNavigation = normalizeMouseNavigation(undefined)
     try {
         const ui = await window.electronAPI.invoke(IPC.UI_LOAD)
         const pref = normalizeInputDevicePreference(ui?.inputDeviceMode)
         seed = pref === 'auto' ? normalizeInputDeviceMode(ui?.inputDeviceDetected) : pref
+        mouseNavigation = normalizeMouseNavigation(ui?.mouseNavigation)
     } catch {
         // UI state unavailable (e.g. Vite dev server) -- keep the default.
     }
-    await cm.setViewInputConfigStyle(viewInputStyleName(seed))
+    await cm.setViewInputConfigStyle(viewInputStyleName(seed, mouseNavigation))
 
     return cm
 }

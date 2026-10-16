@@ -7,6 +7,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import {
   viewInputStyleName,
   normalizeInputDeviceMode,
@@ -22,6 +24,15 @@ import {
 } from '@renderer/viewInputConfig'
 
 describe('viewInputConfig', () => {
+  it('selects PyMOL mouse bindings for both wheel axes while retaining trackpad gestures', () => {
+    expect(viewInputStyleName('mouse', 'pymol')).toBe('PymolViewInConf,UserViewConf')
+    expect(viewInputStyleName('trackpad', 'pymol')).toBe('TrackpadViewInConf,UserViewConf')
+    const xml = readFileSync(resolve(__dirname, '../../../../../data/default_style.xml'), 'utf8')
+    const style = new DOMParser().parseFromString(xml, 'application/xml').querySelector('style[id="PymolViewInConf"]')!
+    expect(style.getAttribute('conf_slab')).toBe('WHEEL1,WHEEL2')
+    expect(style.getAttribute('conf_trax')).toBe('MBUTTON|MOUSE_X')
+    expect(style.getAttribute('conf_zoom')?.split(',')).toContain('RBUTTON|MOUSE_Y')
+  })
   it('maps each device mode to its style preset + UserViewConf layer', () => {
     expect(viewInputStyleName('mouse')).toBe('DefaultViewInConf,UserViewConf')
     expect(viewInputStyleName('trackpad')).toBe('TrackpadViewInConf,UserViewConf')

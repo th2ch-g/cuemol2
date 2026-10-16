@@ -12,6 +12,7 @@ import { makeSel } from '@renderer/worker/server/services/helpers/makeSel';
 import { quoteSelName } from '@renderer/worker/server/services/helpers/selName';
 import { recordOp } from '@renderer/worker/server/actions/serviceOps';
 import { atomSpecOf } from '@renderer/worker/server/services/helpers/atomintr';
+import { naviCenterAt, naviCenterAtSymm } from './naviCtxtMenu';
 
 // ---- internal helpers ----
 
@@ -88,6 +89,20 @@ export function naviHitTest(ctx: WorkerContext, args: NaviHitTestArgs): NaviHitT
     const raw = runHitTest(ctx, args.viewId, args.x, args.y);
     if (!raw) return { hit: false };
     return { hit: true, raw };
+}
+
+/** Center on a picked atom, including its displayed symmetry image, without selecting it. */
+export function naviCenterPick(ctx: WorkerContext, args: NaviHitTestArgs): { ok: boolean } {
+    const raw = runHitTest(ctx, args.viewId, args.x, args.y);
+    if (!raw || raw.objtype !== 'MolCoord') return { ok: false };
+    if (raw.rendtype === '*symm' && raw.symm_id != null) {
+        return naviCenterAtSymm(ctx, {
+            viewId: args.viewId, objId: raw.obj_id, rendId: raw.rend_id,
+            atomId: raw.atom_id, symmId: raw.symm_id,
+        });
+    }
+    if (![raw.x, raw.y, raw.z].every(Number.isFinite)) return { ok: false };
+    return naviCenterAt(ctx, { viewId: args.viewId, x: raw.x, y: raw.y, z: raw.z });
 }
 
 // ---- service: naviClickAtom (left click -- hittest + log + atom label toggle) ----

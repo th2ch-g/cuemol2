@@ -62,6 +62,7 @@ const DEFAULTS: StoreSchema = {
     sidebarActiveView: 'explorer',
     theme: 'dark',
     inputDeviceMode: 'auto',
+    mouseNavigation: 'cuemol',
     gpuPicking: true,
     hoverInfo: true,
     hoverHighlight: true,

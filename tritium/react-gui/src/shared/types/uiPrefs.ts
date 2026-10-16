@@ -75,6 +75,8 @@ export interface UiState {
    * starts with the previously-detected preset instead of always seeding mouse.
    */
   inputDeviceDetected?: 'mouse' | 'trackpad'
+  /** Mouse navigation bindings; trackpad gestures keep their device preset. */
+  mouseNavigation?: 'cuemol' | 'pymol'
   /** POV-Ray executable path (Rendering settings). */
   povrayExe?: string
   /** POV-Ray include directory path (Rendering settings). */

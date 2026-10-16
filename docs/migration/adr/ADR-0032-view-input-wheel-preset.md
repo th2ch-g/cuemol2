@@ -108,3 +108,24 @@ device stays 2-valued.
 - Tests: `react-gui/src/renderer/__test__/viewInputConfig.test.ts`,
   `viewInputConfigContext.test.tsx`, `wheelDeviceClassifier.test.ts`,
   `inputDeviceDetector.test.ts`.
+
+## PyMOL mouse controls
+
+A separate `mouseNavigation` preference (CueMol / PyMOL) chooses mouse
+bindings without replacing the device detector. In Settings > Input > Mouse &
+Navigation, select Mouse controls = PyMOL and Pointing device = Mouse for an
+explicit three-button mouse. Auto-detect also applies the chosen scheme while
+the effective device is a mouse. A detected or pinned trackpad keeps its pan,
+pinch, and rotate gestures. UserViewConf remains the last override layer.
+
+The PyMOL scheme binds both wheel axes to slab thickness, middle-drag to XY
+translation, right-drag to zoom, and Ctrl+Shift+wheel to zoom. A plain middle
+click centers on the picked atom in either scheme without selecting it or
+adding a label. Symmetry hits center on the displayed image. Dragging does not
+trigger this click action. This follows the basic slab/centering actions in
+the [official PyMOL workshop](https://www.pymol.org/tutorials/eUGM13/); it does
+not emulate PyMOL's editing modes or independently movable clipping planes.
+
+A pinned mouse routes Ctrl-wheel as a physical wheel. Auto/trackpad mode still
+interprets plain Ctrl-wheel as Chromium's pinch signal; Ctrl+Shift-wheel is
+never treated as a pinch.

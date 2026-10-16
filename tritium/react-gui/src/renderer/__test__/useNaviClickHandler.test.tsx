@@ -25,6 +25,7 @@ void React;
 // CURRENT InDevEvent OUTPUT bits pinned as-is.
 const LBTN = 1 << 3; // 8
 const RBTN = 1 << 5; // 32
+const MBTN = 1 << 4;
 const SHIFT = 1 << 0; // 1
 
 let injectedCm: unknown = null;
@@ -145,6 +146,18 @@ afterEach(() => {
 });
 
 describe('useNaviClickHandler -- wire contract', () => {
+    it('an unmodified middle click centers without selecting or labeling the atom', async () => {
+        const cm = makeCm();
+        injectedCm = cm;
+        mount();
+        await fireFor(cm, 'mouseClicked', { obj: { x: 11, y: 22, mod: MBTN } });
+        expect(callsFor(cm, 'naviCenterPick')).toEqual([{ viewId: 7, x: 11, y: 22 }]);
+        expect(callsFor(cm, 'naviClickAtom')).toHaveLength(0);
+        expect(callsFor(cm, 'naviResidSel')).toHaveLength(0);
+        await fireFor(cm, 'mouseClicked', { obj: { x: 11, y: 22, mod: MBTN | SHIFT } });
+        expect(callsFor(cm, 'naviCenterPick')).toHaveLength(1);
+        unmount();
+    });
     it('subscribes mouseClicked + mouseDoubleClicked with srcMask SEM_INDEV', () => {
         const cm = makeCm();
         injectedCm = cm;

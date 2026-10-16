@@ -45,6 +45,7 @@ function Consumer(): React.ReactElement {
     deviceSwitch,
     feedWheelSample,
     noteTrackpadGesture,
+    setMouseNavigation,
   } = useViewInputConfig()
   return (
     <div>
@@ -56,6 +57,7 @@ function Consumer(): React.ReactElement {
       <button data-testid="set-auto" onClick={() => setInputDevicePreference('auto')} />
       <button data-testid="feed-trackpad" onClick={() => feedWheelSample(TRACKPAD_WHEEL)} />
       <button data-testid="pinch" onClick={() => noteTrackpadGesture()} />
+      <button data-testid="set-pymol" onClick={() => setMouseNavigation('pymol')} />
     </div>
   )
 }
@@ -87,6 +89,22 @@ const text = (c: HTMLElement, id: string) => c.querySelector(`[data-testid="${id
 describe('ViewInputConfigContext', () => {
   beforeEach(() => setStyle.mockClear())
   afterEach(() => teardownElectronAPI())
+
+  it('persists PyMOL mouse controls and restores them after a device switch', async () => {
+    const { api, container, unmount } = mountWith({ inputDeviceMode: 'mouse' })
+    await flushPromises()
+    click(container, 'set-pymol')
+    await flushPromises()
+    expect(api.invoke).toHaveBeenCalledWith(IPC.UI_SAVE, { mouseNavigation: 'pymol' })
+    expect(setStyle).toHaveBeenLastCalledWith('PymolViewInConf,UserViewConf')
+    click(container, 'set-trackpad')
+    await flushPromises()
+    expect(setStyle).toHaveBeenLastCalledWith(TRACKPAD_STYLE)
+    click(container, 'set-mouse')
+    await flushPromises()
+    expect(setStyle).toHaveBeenLastCalledWith('PymolViewInConf,UserViewConf')
+    unmount()
+  })
 
   it('loads the persisted preference and seed on mount without re-applying', async () => {
     const { container, unmount } = mountWith({
