@@ -12,6 +12,7 @@
 import { app, type BrowserWindow, type BrowserWindowConstructorOptions } from 'electron'
 import { join } from 'path'
 import { getDevIconPath } from '../helpers/appIcon'
+import { isHeadless } from '../headless'
 
 export const isMac = process.platform === 'darwin'
 
@@ -36,6 +37,7 @@ export function chromeWindowOptions(
     // constructed unless told otherwise, so both windows used to appear empty
     // and then be furnished in front of the user.
     show: false,
+    ...(isHeadless() ? { skipTaskbar: true } : {}),
     backgroundColor: CHROME_BG,
     // Window / taskbar icon for an unpackaged run on Windows and Linux
     // (undefined once packaged, and ignored on macOS -- see appIcon.ts).
@@ -62,6 +64,7 @@ export function chromeWindowOptions(
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      ...(isHeadless() ? { backgroundThrottling: false } : {}),
       ...(opts.worker ? { nodeIntegrationInWorker: true } : {}),
       preload: join(__dirname, '../preload/index.js'),
     },

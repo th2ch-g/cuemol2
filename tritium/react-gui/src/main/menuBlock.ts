@@ -185,6 +185,9 @@ export async function withMenuBlocked<T>(
   reason: MenuBlockReason,
   op: () => Promise<T>,
 ): Promise<T> {
+  if (reason === 'native' && process.env.CUEMOL_HEADLESS === '1') {
+    throw new Error('Native dialogs are unavailable in a headless session. Supply a file path explicitly.')
+  }
   setMenuBlocked(reason, true)
   try {
     return await op()

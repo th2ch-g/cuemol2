@@ -29,11 +29,13 @@ import { ConsolePanel } from './renderer/ConsolePanel'
 import { CliPathRow } from './renderer/CliPathRow'
 import { CliStatusItem } from './renderer/CliStatusItem'
 import { ConsoleRoot } from './renderer/ConsoleRoot'
+import { runStartupCommands } from './renderer/startupCommands'
 import { CLI_PATH_ROW } from './shared/consoleTypes'
 import './renderer/console.css'
 
 export const consolePlugin = /* @__PURE__ */ definePlugin({
   manifest: consoleManifest,
+  initializeSession: runStartupCommands,
   Root: ConsoleRoot,
   bottomTabs: {
     console: ConsolePanel,

@@ -24,6 +24,7 @@ import { handleWindowClose } from './closeFunnel'
 import { holdUntilRevealed } from './reveal'
 import { noteMainWindowRevealed } from '../updater'
 import { createOrFocusRenderWindow, getRenderWindow } from './renderWindow'
+import { isHeadless } from '../headless'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -39,6 +40,7 @@ export function getMainWindow(): BrowserWindow | null {
 
 /** Bring the main window to the front, restoring it if minimized. */
 export function focusMainWindow(): void {
+  if (isHeadless()) return
   const win = getMainWindow()
   if (!win) return
   if (win.isMinimized()) win.restore()
@@ -125,6 +127,7 @@ export function createWindow(): void {
   // Restoring the maximized state waits for the same moment: `maximize()`
   // shows a window that is being held back.
   holdUntilRevealed(win, (byFallback) => {
+    if (isHeadless()) return
     if (saved?.isMaximized) win.maximize()
     win.show()
     win.focus()
@@ -180,7 +183,7 @@ export function createWindow(): void {
     const url = new URL(process.env['ELECTRON_RENDERER_URL'])
     if (e2e) url.searchParams.set('e2e', '1')
     win.loadURL(url.toString())
-    if (!e2e) win.webContents.openDevTools({ mode: 'undocked' })
+    if (!e2e && !isHeadless()) win.webContents.openDevTools({ mode: 'undocked' })
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'), e2e ? { query: { e2e: '1' } } : undefined)
   }

@@ -25,7 +25,9 @@ export type {
   PluginSettingControl,
   PluginSettingDecl,
   RendererPlugin,
+  PluginSessionContext,
 } from './types'
+export { useSessionStartup } from './sessionStartup'
 
 // --- The command lane ---
 export { useRegisterPluginCommand } from './usePluginCommand'
@@ -47,7 +49,7 @@ export { usePluginPrefs } from './usePluginPrefs'
 export type { PluginPrefs } from './usePluginPrefs'
 export type { PluginPrefValue } from '@shared/types/uiPrefs'
 export { definePluginSecret, onPluginSecretChanged } from './pluginSecrets'
-export { controlLocalApi, useCliAccessGranted, useLocalApiEndpoint, useLocalApiStatus } from './localApi'
+export { controlLocalApi, useCliAccessGranted, useLaunchAccess, useLocalApiEndpoint, useLocalApiStatus } from './localApi'
 export type { LocalApiCall, LocalApiEndpointHandlers } from './localApi'
 export type { LocalApiEndpoint, LocalApiStatus } from '@shared/types/localApi'
 export type { PluginSecret } from './pluginSecrets'

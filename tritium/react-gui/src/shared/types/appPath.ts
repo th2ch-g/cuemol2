@@ -12,7 +12,7 @@ export interface AppPathInfo {
   modulePath: string
   isPackaged: boolean
   sysConfigPath: string
-  /** Absolute path to user_styles.xml in the OS app-data directory. */
+  /** Path to user_styles.xml in the session's configuration profile. */
   userStylePath: string
   /** Whether userStylePath exists on disk (evaluated in Main where fs is available). */
   userStyleExists: boolean

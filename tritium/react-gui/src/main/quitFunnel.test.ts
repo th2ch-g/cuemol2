@@ -54,6 +54,7 @@ const app = {
   quit: appQuit,
   exit: appExit,
   getPath: vi.fn(() => '/tmp'),
+  setPath: vi.fn(),
   isPackaged: false,
   // main/index.ts takes the single-instance lock at module scope; grant it so
   // the rest of its module body (including the before-quit registration under
@@ -122,6 +123,7 @@ function makeWin(destroyed = false): FakeWindow {
 // The next BrowserWindow() constructed by createWindow() is captured here so
 // tests can fire its window/webContents listeners.
 let constructedWin: FakeWindow | null = null
+let constructedOptions: Record<string, unknown> = {}
 
 // Read constructedWin without tsc carrying the `= null` literal narrowing past
 // the opaque createWindow() side effect (which reassigns it via the ctor).
@@ -140,6 +142,7 @@ class BrowserWindow {
   setMenuBarVisibility = vi.fn()
   setFullScreen = vi.fn()
   isFullScreen = vi.fn(() => false)
+  isMinimized = vi.fn(() => false)
   loadURL = vi.fn()
   loadFile = vi.fn()
   on = vi.fn((event: string, cb: Listener) => {
@@ -150,7 +153,8 @@ class BrowserWindow {
   // createWindow() holds the window off screen until the renderer signals
   // (windows/reveal.ts), which subscribes with once().
   once = this.on
-  constructor() {
+  constructor(options: Record<string, unknown>) {
+    constructedOptions = options
     constructedWin = this as unknown as FakeWindow
   }
   static getAllWindows = vi.fn(() => allWindows)
@@ -209,6 +213,15 @@ vi.mock('@main/handlers/fileDialogs', () => ({
   handleSaveTextAsDialog: vi.fn(),
 }))
 vi.mock('@main/helpers/inferContentFirst', () => ({ inferContentFirst: vi.fn(() => false) }))
+vi.mock('@main/configDirectory', () => ({
+  getConfigDirectory: () => 'test-config',
+  importLegacyProfile: vi.fn(),
+}))
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>()
+  const filesystem = { ...actual, mkdirSync: vi.fn() }
+  return { ...filesystem, default: filesystem }
+})
 
 // String-variable dynamic import targets (dodge TS6307).
 const indexEntry = '@main/index'
@@ -247,6 +260,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
 })
 
 /** Fire the captured before-quit listener registered by main/index.ts. */
@@ -404,6 +418,26 @@ describe('handleWindowClose funnel + render-process-gone (main/windowManager.ts)
       fireRenderGone: () => goneListeners[0]?.({}, { reason: 'crashed', exitCode: 1 }),
     }
   }
+
+  it.each([false, true])('keeps headless=%s windows hidden after reveal and focus requests', async (headless) => {
+    vi.stubEnv('CUEMOL_HEADLESS', headless ? '1' : '')
+    const { win } = await buildWindow()
+    const revealEntry = '@main/windows/reveal'
+    const reveal = await import(revealEntry) as { revealWindow(win: unknown): void }
+    reveal.revealWindow(win)
+    const wm = await import(windowManagerEntry) as { focusMainWindow(): void }
+    wm.focusMainWindow()
+    const captured = win as unknown as BrowserWindow
+    expect(captured.show).toHaveBeenCalledTimes(headless ? 0 : 2)
+    expect(captured.focus).toHaveBeenCalledTimes(headless ? 0 : 2)
+    if (headless) {
+      expect(constructedOptions).toMatchObject({ show: false, skipTaskbar: true, webPreferences: { backgroundThrottling: false } })
+      const quitEntry = '@main/appQuit'
+      const quit = await import(quitEntry) as { quitApp(force: boolean): Promise<unknown> }
+      await expect(quit.quitApp(false)).rejects.toThrow('quit --force')
+      expect(appQuit).not.toHaveBeenCalled()
+    }
+  })
 
   it('first close: preventDefault, send WINDOW_CLOSE_REQUEST, set in-flight', async () => {
     const { win, fireClose } = await buildWindow()

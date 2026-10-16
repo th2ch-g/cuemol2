@@ -8,6 +8,7 @@
 export const IPC = {
   // invoke channels (renderer -> main, with reply)
   APP_PATH:       'apppath',
+  APP_STARTUP_SCRIPTS: 'app:startup-scripts',
   DIALOG_OPEN:    'dialog:openFile',
   DIALOG_SAVE_SCENE: 'dialog:saveScene',
   DIALOG_STYLE_OPEN: 'dialog:styleOpen',
@@ -178,6 +179,8 @@ export const IPC = {
   // Launched by tritium_cli: open command line access for this run of the app.
   LOCAL_API_CLI_ACCESS:        'local-api:cli-access',         // invoke: main window -> main
   LOCAL_API_CLI_ACCESS_GRANTED: 'local-api:cli-access-granted', // push:   main -> main window
+  LOCAL_API_LAUNCH_ACCESS: 'local-api:launch-access',
+  LOCAL_API_LAUNCH_ACCESS_CHANGED: 'local-api:launch-access-changed',
 
   // App self-update (main/updater). Main owns the flow and pushes the whole
   // status on every change; the main window shows it and sends the user's choices.

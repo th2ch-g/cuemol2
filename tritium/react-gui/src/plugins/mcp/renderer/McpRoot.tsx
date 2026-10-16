@@ -15,6 +15,7 @@ import {
   controlLocalApi,
   useCueMol,
   useEnsureActiveScene,
+  useLaunchAccess,
   useLocalApiEndpoint,
   useOpenSceneFile,
   useTrackedEndpointCalls,
@@ -32,6 +33,7 @@ export const McpRoot: React.FC = () => {
   const { cm } = useCueMol()
   const ensureActiveScene = useEnsureActiveScene()
   const { serverEnabled, port } = useMcpPrefs()
+  const requested = useLaunchAccess().includes('mcp')
   // A call holds an undo transaction open in the worker.
   const calls = useTrackedEndpointCalls()
   const sceneTools = useSceneTools()
@@ -51,7 +53,7 @@ export const McpRoot: React.FC = () => {
     void controlLocalApi({ action: 'setPort', port })
   }, [port])
 
-  useLocalApiEndpoint('mcp', cm !== null && serverEnabled, {
+  useLocalApiEndpoint('mcp', cm !== null && (serverEnabled || requested), {
     async handle({ reqId, kind, payload }) {
       if (!cm) throw new Error('CueMol is not ready yet.')
       switch (kind) {

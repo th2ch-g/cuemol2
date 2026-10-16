@@ -116,6 +116,8 @@ function push(): void {
  * outside a packaged macOS arm64 build.
  */
 export function initUpdater(): void {
+  // Wheels and command archives are updated by their package manager.
+  if (process.env.CUEMOL_MANAGED_INSTALL === '1') return
   if (!app.isPackaged || process.platform !== 'darwin' || process.arch !== 'arm64') return
   const version = readFullVersion()
   if (!version) {

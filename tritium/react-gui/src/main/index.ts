@@ -15,12 +15,15 @@ import { APP_ID, APP_PRODUCT_NAME } from '@shared/appInfo'
 import { installMainCrashHandlers } from './installMainCrashHandlers'
 import { noteCliLaunch, stopLocalApi } from './localApi'
 import { initUpdater, swapOnQuit } from './updater'
+import { isHeadless } from './headless'
+import { getConfigDirectory, importLegacyProfile } from './configDirectory'
 
 // Before anything else, so a throw during the setup below is still reported
 // to the terminal and a closed stdout pipe cannot masquerade as a crash.
 installMainCrashHandlers()
 
 app.setName(APP_PRODUCT_NAME)
+const legacyUserData = app.getPath('userData')
 
 // Windows groups taskbar buttons by Application User Model ID. Left unset,
 // Electron derives a default of its own, which is not the id electron-builder
@@ -53,16 +56,24 @@ if (process.env.CUEMOL_RENDERER_BACKGROUNDING && process.env.CUEMOL_RENDERER_BAC
 // profile is untouched. Gated by env so a packaged/production run never trips
 // it. Must run before the app is ready -- ahead of any electron-store / session
 // access -- for the new path to take effect.
-if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
-  const freshDir = path.join(os.tmpdir(), 'cuemol-dev-userdata')
+const freshPrefs = !!process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0'
+const profileRoot = freshPrefs && !process.env.CUEMOL_CONFIG_DIR
+  ? path.join(os.tmpdir(), 'cuemol-dev-userdata')
+  : getConfigDirectory()
+if (freshPrefs && !process.env.CUEMOL_CONFIG_DIR) {
   try {
-    fs.rmSync(freshDir, { recursive: true, force: true })
+    fs.rmSync(profileRoot, { recursive: true, force: true })
   } catch {
     // First run (dir absent) or a transient FS error -- a fresh dir is created below.
   }
-  app.setPath('userData', freshDir)
-  console.log('[Main] CUEMOL_FRESH_PREFS set -- clean profile at ' + freshDir)
+  console.log('[Main] CUEMOL_FRESH_PREFS set -- clean profile at ' + profileRoot)
 }
+
+const profilePath = isHeadless() && process.env.CUEMOL_HEADLESS_DATA_DIR
+  ? path.resolve(process.env.CUEMOL_HEADLESS_DATA_DIR)
+  : path.join(profileRoot, isHeadless() ? 'headless' : 'gui')
+fs.mkdirSync(profilePath, { recursive: true, mode: 0o700 })
+app.setPath('userData', profilePath)
 
 // --- Single instance + OS shell file open (UXP openFromShell parity) ---
 
@@ -70,6 +81,15 @@ if (process.env.CUEMOL_FRESH_PREFS && process.env.CUEMOL_FRESH_PREFS !== '0') {
 // userData, so a fresh-prefs dev run deliberately gets its own lock domain and
 // can run alongside a normal one.
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (gotSingleInstanceLock && !process.env.CUEMOL_CONFIG_DIR && !freshPrefs &&
+    !(isHeadless() && process.env.CUEMOL_HEADLESS_DATA_DIR)) {
+  try {
+    importLegacyProfile(isHeadless() ? path.join(legacyUserData, 'headless') : legacyUserData, profilePath)
+  } catch (error) {
+    console.warn('[Main] could not import the previous profile:', error)
+  }
+}
 
 if (!gotSingleInstanceLock) {
   // requestSingleInstanceLock() has already handed our argv and cwd to the
@@ -114,7 +134,7 @@ if (gotSingleInstanceLock) {
     noteCliLaunch(argv)
     focusMainWindow()
     // Pull the app forward from whichever app the user launched us from.
-    if (process.platform === 'darwin') app.focus({ steal: true })
+    if (process.platform === 'darwin' && !isHeadless()) app.focus({ steal: true })
     acceptShellOpen(
       parseFileArgs({ argv, isPackaged: app.isPackaged, cwd: workingDirectory }),
     )
@@ -147,6 +167,7 @@ app.whenReady().then(() => {
 
   // Dev runs have no .app bundle to take the dock icon from (see appIcon.ts).
   applyDevDockIcon()
+  if (isHeadless()) app.dock?.hide()
 
   // Drop what previous runs left behind (their metadata died with them, so the
   // images are unreachable). Only directories whose owning process is gone are
@@ -174,7 +195,7 @@ app.whenReady().then(() => {
   session.defaultSession.setPermissionCheckHandler(() => true)
 
   createWindow()
-  initUpdater()
+  if (!isHeadless()) initUpdater()
 })
 
 // The render history is per-run: its images are temp files and the settings

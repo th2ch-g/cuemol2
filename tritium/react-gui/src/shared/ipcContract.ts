@@ -19,6 +19,7 @@ import type { FileDialogOptions } from './types/fileDialog'
 import type { RecentFileEntry } from './types/recent'
 import type { FileErrorData, FileOpenedData, ShellOpenRequest } from './types/fileEvents'
 import type { AppPathInfo } from './types/appPath'
+import type { StartupScript } from './types/startup'
 import type { NaviCtxAction, NaviCtxMenuPayload } from './types/naviCtxMenu'
 import type { TextEditAction, TextCtxShowPayload } from './types/textCtxMenu'
 import type { SceneCtxAction, SceneCtxMenuPayload } from './types/sceneCtxMenu'
@@ -37,12 +38,13 @@ import type {
 import type { CuemolClipWriteReq, CuemolClipReadRes, CuemolClipPeekRes } from './types/clipboard'
 import type {
   AppQuitRequest, AppQuitResponse,
-  LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus,
+  LocalApiControlReq, LocalApiReplyPayload, LocalApiRequestPayload, LocalApiStatus, LocalApiEndpoint,
 } from './types/localApi'
 import type { UpdateStatus } from './types/update'
 
 export interface InvokeChannels {
   [IPC.APP_PATH]:          { req: void;                  res: AppPathInfo }
+  [IPC.APP_STARTUP_SCRIPTS]: { req: void; res: StartupScript[] }
   [IPC.DIALOG_OPEN]:       { req: FileDialogOptions;     res: void }
   [IPC.DIALOG_SAVE_SCENE]: { req: { defaultName: string };
                              res: { canceled: boolean; filePath: string } }
@@ -124,6 +126,7 @@ export interface InvokeChannels {
   [IPC.LOCAL_API_CONTROL]: { req: LocalApiControlReq;   res: LocalApiStatus }
   [IPC.LOCAL_API_STATUS]:  { req: void;                 res: LocalApiStatus }
   [IPC.LOCAL_API_CLI_ACCESS]: { req: void;              res: boolean }
+  [IPC.LOCAL_API_LAUNCH_ACCESS]: { req: void; res: LocalApiEndpoint[] }
   [IPC.UPDATE_GET_STATUS]:     { req: void; res: UpdateStatus }
   [IPC.UPDATE_CHECK]:          { req: void; res: void }
   [IPC.UPDATE_DOWNLOAD]:       { req: void; res: void }
@@ -229,6 +232,7 @@ export interface PushChannels {
   [IPC.RENDER_RELAY_REQUEST]:     RelayRequestPayload
   [IPC.LOCAL_API_REQUEST]:        LocalApiRequestPayload
   [IPC.LOCAL_API_CLI_ACCESS_GRANTED]: void
+  [IPC.LOCAL_API_LAUNCH_ACCESS_CHANGED]: LocalApiEndpoint[]
   [IPC.UPDATE_STATUS]:            UpdateStatus
 }
 

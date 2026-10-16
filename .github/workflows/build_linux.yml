@@ -147,6 +147,41 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    - name: Check headless console and MCP without a display
+      shell: bash
+      working-directory: tritium
+      run: |
+        mkdir -p ../.build_out
+        bash -euo pipefail <<'CHECK' 2>&1 | tee ../.build_out/headless-check.log
+        sudo apt-get update
+        sudo apt-get install -y xvfb xauth
+        node react-gui/node_modules/electron/install.js
+        CUEMOL_RELEASE=1 pnpm --dir react-gui exec electron-vite build
+        pnpm --dir cli run build
+        export LIBCUEMOL2_ROOT="$GITHUB_WORKSPACE/target/cuemol2"
+        export TRITIUM_CLI_DEV_APP="$GITHUB_WORKSPACE/tritium/react-gui"
+        export CUEMOL_LAUNCH_LOG="$GITHUB_WORKSPACE/.build_out/headless-app.log"
+        node cli/scripts/smoke-headless.mjs node cli/dist/cuemol.mjs
+        CHECK
+
+    - name: Report headless check failure
+      if: failure()
+      shell: bash
+      run: |
+        node <<'REPORT'
+        const fs = require('node:fs')
+        for (const name of ['headless-check', 'headless-app']) {
+          const file = `.build_out/${name}.log`
+          if (fs.existsSync(file)) {
+            const text = fs.readFileSync(file, 'utf8').replace(/\x1b\[[0-9;]*m/g, '').slice(-12000)
+            for (let offset = 0; offset < text.length; offset += 3000) {
+              const escaped = text.slice(offset, offset + 3000).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')
+              console.error(`::error title=${name} ${offset / 3000 + 1}::${escaped}`)
+            }
+          }
+        }
+        REPORT
+
     - name: Check tritium/react-gui
       uses: ./build_scripts/check_tritium_react_gui
 

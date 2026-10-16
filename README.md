@@ -15,8 +15,12 @@ Powered by [Mozilla XULRunner](http://www.mozilla.org/projects/mozilla-based.htm
 the application framework of Firefox and Thunderbird (and other mozilla-based application as well),
 CueMol2 now runs under both Windows, MacOS X, and Linux in a similar GUI appearance.
 
-CueMol3 molecular display
+CueMol3 desktop and command line
 --------------------------------------
+
+The Electron-based CueMol3 includes a unified command for GUI launch, console
+commands, MCP, agent instructions, and updates. See the
+[command guide](tritium/cli/README.md).
 
 New molecular files initially show proteins as cartoons, nucleic acids as
 ribbons, and other atoms as ball-and-stick. A saved GUI renderer choice or an

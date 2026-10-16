@@ -196,6 +196,8 @@ export function createLocalApiServer(opts: LocalApiServerOptions): LocalApiServe
       })
       s.listen(port, '127.0.0.1', () => {
         server = s
+        const address = s.address()
+        if (address && typeof address !== 'string') port = address.port
         listening = true
         error = null
         resolve()

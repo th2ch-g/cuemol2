@@ -15,9 +15,8 @@ export const consoleManifest: PluginManifest = {
   version: '1.0.0',
   description:
     'Experimental. A command line for CueMol, with a PyMOL-compatible dialect.',
-  // On by default: tritium_cli needs it, and a launch from the command line
-  // cannot turn a plugin on.
   defaultEnabled: true,
+  launchEndpoint: 'console',
   contributes: {
     statusBar: [{ id: 'cli' }],
     settings: [

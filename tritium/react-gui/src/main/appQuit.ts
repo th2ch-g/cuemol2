@@ -22,6 +22,7 @@ import {
   waitQuitOutcome,
 } from './quitState'
 import type { QuitOutcome } from './quitState'
+import { isHeadless } from './headless'
 
 /**
  * Quit the app.
@@ -39,6 +40,7 @@ export function quitApp(force: boolean): Promise<QuitOutcome> {
     setImmediate(() => app.quit())
     return Promise.resolve('quit')
   }
+  if (isHeadless()) return Promise.reject(new Error('A headless session cannot show save prompts. Save the scene, then use quit --force.'))
   focusMainWindow()
   if (process.platform === 'darwin') app.focus({ steal: true })
   const outcome = waitQuitOutcome()

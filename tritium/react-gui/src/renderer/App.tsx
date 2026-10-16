@@ -13,9 +13,10 @@ import React from 'react'
 import { PluginRoots } from '@renderer/plugin-host'
 import { AppBoot, AppCommands, AppShell, E2eBridge, RenderWindowBridge } from './shell'
 import { UpdateBridge } from './features/update/UpdateBridge'
+import { SessionStartupProvider } from '@renderer/plugin-host/sessionStartup'
 
 const App: React.FC = () => (
-  <>
+  <SessionStartupProvider>
     {/* No UI of their own: the launch / OS wiring, the command handlers and
         the Rendering-window bridge. Mounted as components so the provider
         slices they read re-render them alone, not the chrome. */}
@@ -30,7 +31,7 @@ const App: React.FC = () => (
     {/* Dev-only surface for the UI layout inspector; inert unless ?e2e=1. */}
     {__DEV_UI__ && <E2eBridge />}
     <AppShell />
-  </>
+  </SessionStartupProvider>
 )
 
 export default App

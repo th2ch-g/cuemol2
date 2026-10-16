@@ -13,6 +13,9 @@ importers:
       '@cuemol/console-kit':
         specifier: workspace:*
         version: link:../console-kit
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.32.1
+        version: 1.32.1(zod@4.6.2)
       '@types/node':
         specifier: ^20.17.6
         version: 20.19.37

@@ -27,7 +27,7 @@ import type { RendererPlugin } from './types'
 
 void React
 
-type Switchability = { devOnly?: boolean; alwaysEnabled?: boolean; defaultEnabled?: boolean }
+type Switchability = { devOnly?: boolean; alwaysEnabled?: boolean; defaultEnabled?: boolean; launchEndpoint?: 'mcp' }
 
 const plugin = (id: string, how: Switchability = {}): RendererPlugin => ({
   manifest: { id, name: id, version: '1.0.0', ...how },
@@ -36,7 +36,7 @@ const plugin = (id: string, how: Switchability = {}): RendererPlugin => ({
 /** One of each: switchable-on-by-default, opt-in, and not switchable. */
 const PLUGINS = [
   plugin('alpha'),
-  plugin('optin', { defaultEnabled: false }),
+  plugin('optin', { defaultEnabled: false, launchEndpoint: 'mcp' }),
   plugin('fixed', { alwaysEnabled: true }),
 ]
 
@@ -143,6 +143,20 @@ describe('PluginProvider', () => {
 
     expect(api.invoke).not.toHaveBeenCalledWith(IPC.UI_SAVE, expect.anything())
     expect(h.result.isEnabled('fixed')).toBe(true)
+    h.unmount()
+  })
+
+  it('enables an explicitly requested endpoint for this session without saving the choice', async () => {
+    api = setupElectronAPI({
+      invoke: vi.fn((channel: string) => Promise.resolve(
+        channel === IPC.UI_LOAD ? { pluginEnabled: { optin: false } }
+          : channel === IPC.LOCAL_API_LAUNCH_ACCESS ? ['mcp'] : undefined,
+      )) as unknown as ReturnType<typeof setupElectronAPI>['invoke'],
+    })
+    const h = mountRegistry()
+    await flushPromises()
+    expect(ids(h.result.active)).toContain('optin')
+    expect(api.invoke).not.toHaveBeenCalledWith(IPC.UI_SAVE, expect.anything())
     h.unmount()
   })
 

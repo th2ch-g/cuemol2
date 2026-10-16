@@ -24,6 +24,7 @@ import { useTextContextMenu } from '@renderer/hooks/useTextContextMenu'
 import { installSelectAllScope } from '@renderer/utils/selectAllScope'
 import { installClipboardScopeTracking } from '@renderer/utils/editClipboard'
 import { useMenuKeyBindings } from '@renderer/shell/keybindings/useMenuKeyBindings'
+import { usePluginStartup } from '@renderer/plugin-host/usePluginStartup'
 
 export const AppBoot: React.FC = () => {
   const { cueMolReady, cm } = useCueMol()
@@ -73,6 +74,7 @@ export const AppBoot: React.FC = () => {
   // + view + register tab" action the New Tab dialog uses.
   const newScene = useNewSceneAction({ cm })
   const { initialSceneSettled } = useAppInitialization({ cueMolReady, newScene })
+  const startupSettled = usePluginStartup(initialSceneSettled)
 
   // The window is created hidden. It goes on screen once the persisted
   // layout and theme are applied and the first scene's tab is in -- before
@@ -81,7 +83,7 @@ export const AppBoot: React.FC = () => {
   useRevealWindow(layoutLoaded && themeLoaded && initialSceneSettled)
 
   // OS shell / command-line file open (UXP openFromShell parity).
-  useShellOpenFiles({ cm, cueMolReady, initialSceneSettled })
+  useShellOpenFiles({ cm, cueMolReady, initialSceneSettled: initialSceneSettled && startupSettled })
 
   // OS window title follows the active scene (UXP setWindowTitle).
   useWindowTitleSync(tabs, activeTabId)

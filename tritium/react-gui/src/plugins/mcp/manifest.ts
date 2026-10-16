@@ -19,6 +19,7 @@ export const mcpManifest: PluginManifest = {
     'drive CueMol through the Model Context Protocol.',
   // Off by default: it opens a port, which nobody should get without asking.
   defaultEnabled: false,
+  launchEndpoint: 'mcp',
   contributes: {
     statusBar: [{ id: 'mcp' }],
     settings: [

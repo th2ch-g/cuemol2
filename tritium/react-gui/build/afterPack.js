@@ -27,6 +27,7 @@ exports.default = async function afterPack(context) {
   const { appOutDir, electronPlatformName, packager } = context;
   // Before signing, so the seal covers it.
   console.log(`afterPack: wrote ${writeCliWrapper(context)}`);
+  console.log(`afterPack: wrote ${writeCliWrapper(context, 'cuemol')}`);
   if (electronPlatformName !== 'darwin') return;
 
   const appPath = path.join(appOutDir, `${packager.appInfo.productFilename}.app`);

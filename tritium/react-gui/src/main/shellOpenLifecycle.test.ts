@@ -41,6 +41,7 @@ const app = {
   requestSingleInstanceLock,
   getPath: vi.fn(() => '/tmp'),
   setPath: vi.fn(),
+  dock: { hide: vi.fn() },
   isPackaged: false,
 }
 
@@ -79,11 +80,15 @@ vi.mock('@main/stateStore', () => ({ loadUi: vi.fn(() => ({ theme: 'dark' })) })
 vi.mock('@main/installMainCrashHandlers', () => ({
   installMainCrashHandlers: vi.fn(),
 }))
+vi.mock('@main/configDirectory', () => ({
+  getConfigDirectory: () => 'test-config',
+  importLegacyProfile: vi.fn(),
+}))
 
 // parseFileArgs stats each candidate path; treat them all as existing files.
 // Mocked as a module because an ESM namespace cannot be spied on.
 vi.mock('fs', () => ({
-  default: { statSync: () => ({ isFile: () => true }), rmSync: () => undefined },
+  default: { statSync: () => ({ isFile: () => true }), rmSync: () => undefined, mkdirSync: () => undefined },
   statSync: () => ({ isFile: () => true }),
   rmSync: () => undefined,
 }))
@@ -133,6 +138,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
 })
 
 function listener(event: string): Listener {
@@ -142,6 +148,14 @@ function listener(event: string): Listener {
 }
 
 describe('shell open wiring (main/index.ts)', () => {
+  it('isolates a headless profile and never raises it on a second launch', async () => {
+    vi.stubEnv('CUEMOL_HEADLESS', '1')
+    await import(indexEntry)
+    expect(app.setPath).toHaveBeenCalledWith('userData', expect.stringMatching(/headless$/))
+    listener('second-instance')({}, ['electron', '.', '--cuemol-mcp'], '/work')
+    expect(appFocus).not.toHaveBeenCalled()
+    expect(queue.takeShellOpen().paths).toEqual([])
+  })
   it('queues command-line file arguments at startup', async () => {
     process.argv = ['electron', '.', '/data/1crn.pdb']
 

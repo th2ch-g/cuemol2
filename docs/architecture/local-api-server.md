@@ -61,7 +61,7 @@ tritium_cli     --POST /console/*-----+--> main: localApi/server.ts (127.0.0.1:<
 
 ### 接続情報ファイル
 
-listen 中は `~/.cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` で場所を変更可) に
+listen 中は `~/.config/cuemol/local-api.json` (mode 0600、`CUEMOL_LOCAL_API_INFO` で場所を変更可) に
 `{ port, token, pid, endpoints }` を書く。同じユーザの command line client が、port も token も
 貼り付けずに接続するためのもの。close と app 終了で消す。
 
@@ -170,7 +170,7 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
   react-gui 側 (`main/localApi/consoleEndpoint.test.ts`、devDependency `@cuemol/tritium-cli`)。repo からは `task run_tritium_cli`
 (`-- -c '...'` で非対話)、配布物からは同梱の wrapper `tritium_cli` (§5.3) で起動する。
 
-- 接続情報は request ごとに `~/.cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO`) から読む。
+- 接続情報は request ごとに `~/.config/cuemol/local-api.json` (`CUEMOL_LOCAL_API_INFO`) から読む。
   port は MCP plugin の設定で変わり得るが、client は毎回このファイルを読むので影響しない。
 - **app の自動起動** (`ensureApp`): 情報ファイルが無い、`console` endpoint が無い、pid が
   死んでいるときは、`ELECTRON_RUN_AS_NODE` 下 (= wrapper 経由、`process.execPath` が app) に限り
@@ -186,7 +186,7 @@ ES module `dist/tritium_cli.mjs` に bundle する (`task build_tritium` に含�
   ディレクトリにする。素の `node` で起動したときと `--no-launch` では起動せず、案内を出して終わる。
 - 対話: 起動時に banner (version、port、pid、操作の案内) を出す。prompt は `CueMol <dir> ❯` /
   `pymol <dir> ❯` (dialect 名は色分け)、`native` / `pymol` で dialect 切り替え、Tab 補完
-  (zsh 式の一覧とメニュー。[console-completion.md](console-completion.md))、履歴 `~/.tritium_cli_history`、
+  (zsh 式の一覧とメニュー。[console-completion.md](console-completion.md))、履歴 `~/.config/cuemol/console-history`、
   待機中は spinner と経過秒、1 秒以上かかったコマンドは `✓` / `✗` と所要時間を出す。
   実行中の Ctrl-C は中断、待機中は入力行の消去 / 終了。`exit` か Ctrl-D で抜ける (app は残る)。
   `quit` (`--force` / `force=true` で確認なし) は app ごと終了し、CLI も終わる (§5.4)。
@@ -265,3 +265,14 @@ undo txn は scene ごとに分かれる。
 - 起動中の call を GUI 側から止める UI は無い (client 側の中断で止まる)。
 - Windows の `tritium_cli.cmd` (GUI subsystem の exe を Node として動かす) で、対話 (readline) と
   Ctrl-C が動くかは未確認。
+
+## Unified command access
+
+`cuemol mcp` bridges stdio to the authenticated HTTP endpoint;
+`cuemol console` retains the console protocol. The launch flags `--cuemol-mcp`
+and `--tritium-cli` request their respective endpoints for the current session.
+Main publishes the requested endpoints through `LOCAL_API_LAUNCH_ACCESS` and
+`LOCAL_API_LAUNCH_ACCESS_CHANGED`. The plugin host temporarily mounts their
+plugins even when saved choices disable them; it does not persist the override.
+The endpoint remains open until the app exits. See the
+[command guide](../../tritium/cli/README.md) for client configuration.

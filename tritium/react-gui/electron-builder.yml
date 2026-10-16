@@ -150,6 +150,8 @@ extraResources:
   # stay on (no fuses are set).
   - from: ../cli/dist/tritium_cli.mjs
     to: cli/tritium_cli.mjs
+  - from: ../cli/dist/cuemol.mjs
+    to: cli/cuemol.mjs
 
 mac:
   # arm64 DMG only (matches host build of libcuemol2.dylib)

@@ -15,6 +15,7 @@ import fs from 'fs';
 import { IPC } from '@shared/ipcChannels';
 import type { AppPathInfo } from '@shared/types/appPath';
 import { handleInvoke } from '../ipc/handleInvoke';
+import { readStartupScripts } from '../startupScripts';
 
 export function getSysConfigPath(): string {
   if (app.isPackaged) {
@@ -132,6 +133,7 @@ export function getCliPath(): string {
 
 /** Register the app-path channel. */
 export function registerAppPathHandlers(): void {
+  handleInvoke(IPC.APP_STARTUP_SCRIPTS, () => readStartupScripts())
   handleInvoke(IPC.APP_PATH, async () => {
     const userStylePath = getUserStylePath()
     let userStyleExists = false

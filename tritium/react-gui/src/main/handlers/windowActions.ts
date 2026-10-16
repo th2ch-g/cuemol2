@@ -90,6 +90,7 @@ export function registerWindowHandlers(mainWindow: BrowserWindow): void {
    * trigger it.
    */
   handleInvoke(IPC.MENU_INVOKE_ROLE, (event, role) => {
+    if (process.env.CUEMOL_HEADLESS === '1') return
     // Act on the window that asked. The Rendering window has its own menu
     // bar, and routing its DevTools toggle to the main window opened the
     // wrong inspector.
@@ -110,6 +111,7 @@ export function registerWindowHandlers(mainWindow: BrowserWindow): void {
   // Kept local rather than delegating to windowManager.focusMainWindow():
   // windowManager already imports this module, and the window is in hand here.
   handleInvoke(IPC.WINDOW_FOCUS_MAIN, () => {
+    if (process.env.CUEMOL_HEADLESS === '1') return
     if (mainWindow.isDestroyed()) return
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.show()

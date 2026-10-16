@@ -14,6 +14,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { IPC } from '@shared/ipcChannels'
 import type { LocalApiControlReq, LocalApiEndpoint, LocalApiStatus } from '@shared/types/localApi'
+import { useSessionStartup } from './sessionStartup'
 
 /** One request for an endpoint, as its owner receives it. */
 export interface LocalApiCall {
@@ -31,6 +32,23 @@ export interface LocalApiEndpointHandlers {
 }
 
 const statusListeners = new Set<(s: LocalApiStatus) => void>()
+
+/** Endpoints requested for this app session, without persisting plugin choices. */
+export function useLaunchAccess(): readonly LocalApiEndpoint[] {
+  const [endpoints, setEndpoints] = useState<LocalApiEndpoint[]>([])
+  useEffect(() => {
+    const api = window.electronAPI
+    if (!api) return
+    let live = true
+    const accept = (values: LocalApiEndpoint[] | undefined) => {
+      if (live && values) setEndpoints((current) => [...new Set([...current, ...values])])
+    }
+    const off = api.onPush(IPC.LOCAL_API_LAUNCH_ACCESS_CHANGED, accept)
+    void api.invoke(IPC.LOCAL_API_LAUNCH_ACCESS).then(accept)
+    return () => { live = false; off() }
+  }, [])
+  return endpoints
+}
 
 function publish(s: LocalApiStatus | undefined): LocalApiStatus | null {
   if (!s) return null
@@ -91,12 +109,13 @@ export function useLocalApiEndpoint(
   enabled: boolean,
   handlers: LocalApiEndpointHandlers,
 ): void {
+  const { ready } = useSessionStartup()
   const ref = useRef(handlers)
   ref.current = handlers
 
   useEffect(() => {
     const api = window.electronAPI
-    if (!api || !enabled) return
+    if (!api || !enabled || !ready) return
     void controlLocalApi({ action: 'endpoint', endpoint, enabled: true })
     const off = api.onPush(IPC.LOCAL_API_REQUEST, (p) => {
       if (p.endpoint !== endpoint) return
@@ -119,5 +138,5 @@ export function useLocalApiEndpoint(
       off()
       void controlLocalApi({ action: 'endpoint', endpoint, enabled: false })
     }
-  }, [endpoint, enabled])
+  }, [endpoint, enabled, ready])
 }

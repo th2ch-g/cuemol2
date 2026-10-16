@@ -30,6 +30,17 @@ export interface LocalApiInfoFile {
  */
 export const TRITIUM_CLI_FLAG = '--tritium-cli'
 
+/** Request MCP access for this app session without changing saved preferences. */
+export const CUEMOL_MCP_FLAG = '--cuemol-mcp'
+
+/** Endpoints explicitly requested by a command-line invocation. */
+export function launchEndpoints(argv: readonly string[]): LocalApiEndpoint[] {
+  const endpoints: LocalApiEndpoint[] = []
+  if (argv.includes(TRITIUM_CLI_FLAG)) endpoints.push('console')
+  if (argv.includes(CUEMOL_MCP_FLAG)) endpoints.push('mcp')
+  return endpoints
+}
+
 // --- The console endpoint's wire format ---
 
 export type ConsoleDialectId = 'native' | 'pymol'
@@ -82,6 +93,7 @@ export interface ConsoleInfoResponse {
   /** libcuemol2's version and build, as in About. */
   version: string
   build: string
+  startupErrors?: readonly string[]
 }
 
 /** `POST /app/quit`: quit the app, as its Quit menu item does. */

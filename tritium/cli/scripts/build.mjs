@@ -12,16 +12,23 @@
 import { build } from 'esbuild'
 import { fileURLToPath } from 'node:url'
 import * as path from 'node:path'
+import { readFileSync } from 'node:fs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
+const header = readFileSync(path.join(root, '../../src/_version.h'), 'utf8')
+const version = process.env.CM_VERSION_OVERRIDE || header.match(/#define QM_VERSION\s+"([^"]+)"/)[1]
+
 await build({
-  entryPoints: [path.join(root, 'src/tritium_cli.ts')],
-  outfile: path.join(root, 'dist/tritium_cli.mjs'),
+  entryPoints: [path.join(root, 'src/tritium_cli.ts'), path.join(root, 'src/cuemol.ts')],
+  outdir: path.join(root, 'dist'),
+  outExtension: { '.js': '.mjs' },
   bundle: true,
   platform: 'node',
   format: 'esm',
   target: 'node18',
+  loader: { '.md': 'text' },
+  define: { __CUEMOL_VERSION__: JSON.stringify(version) },
   // The entry's own shebang is kept by esbuild.
   logLevel: 'warning',
 })

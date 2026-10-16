@@ -21,6 +21,7 @@ import {
   useOpenSceneFile,
   usePluginPrefs,
   useSceneTabs,
+  useSessionStartup,
   useTrackedEndpointCalls,
 } from '@renderer/plugin-host/api'
 import type {
@@ -41,6 +42,7 @@ export const CLI_ECHO_PREFIX = '[cli] '
 
 export function useConsoleEndpoint(): void {
   const { cm } = useCueMol()
+  const { errors: startupErrors } = useSessionStartup()
   const ensureActiveScene = useEnsureActiveScene()
   const { activeSceneId, activeMolViewId } = useActiveScene()
   const { prefs } = usePluginPrefs(CONSOLE_PLUGIN_ID)
@@ -57,7 +59,7 @@ export function useConsoleEndpoint(): void {
       if (!cm) throw new Error('CueMol is not ready yet.')
       if (kind === 'info') {
         const { version, build } = await cm.getAppInfo()
-        const answer: ConsoleInfoResponse = { version, build }
+        const answer: ConsoleInfoResponse = { version, build, startupErrors }
         return answer
       }
       if (kind === 'complete') {

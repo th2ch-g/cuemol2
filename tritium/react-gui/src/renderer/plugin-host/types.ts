@@ -14,6 +14,7 @@ import type { AppIconKey } from '@renderer/h3-kit/primitives'
 import type { AsyncCueMol } from '@renderer/worker/client/AsyncCueMol'
 import type { PluginCommandId, PluginMenuContribution } from '@shared/types/pluginContrib'
 import type { PluginPrefValue } from '@shared/types/uiPrefs'
+import type { SceneTabs } from './sceneTabs'
 import type {
   PluginSettingControl,
   SettingControl,
@@ -149,6 +150,8 @@ export interface PluginManifest {
    * `alwaysEnabled` is set.
    */
   defaultEnabled?: boolean
+  /** Temporarily enable this plugin when its endpoint is requested at launch. */
+  launchEndpoint?: import('@shared/types/localApi').LocalApiEndpoint
   contributes?: PluginContributes
 }
 
@@ -173,9 +176,19 @@ export interface BottomTabComponentProps {
 
 export type BottomTabComponent = React.ComponentType<BottomTabComponentProps>
 
+/** Scene operations available during session initialization. */
+export interface PluginSessionContext {
+  cm: AsyncCueMol
+  ensureActiveScene(): Promise<{ scene_uid: number; view_id: number } | undefined>
+  tabs: SceneTabs
+  openScene(filePath: string): Promise<boolean>
+}
+
 /** A plugin as the host sees it. */
 export interface RendererPlugin {
   manifest: PluginManifest
+  /** Runs once after the initial scene, including explicit user startup files when the UI is disabled. */
+  initializeSession?(context: PluginSessionContext): Promise<void>
   /**
    * Mounted while the plugin is enabled, rendering nothing of its own. This
    * is where command handlers are registered and where the plugin's dialog

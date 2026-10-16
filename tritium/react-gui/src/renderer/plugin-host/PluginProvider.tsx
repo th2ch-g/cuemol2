@@ -39,6 +39,7 @@ import type { RendererPlugin } from './types'
 import type { PluginPrefValue } from '@shared/types/uiPrefs'
 import { NO_PREFS, PluginContext } from './pluginContext'
 import type { PluginContextValue, PluginPrefsMap } from './pluginContext'
+import { useLaunchAccess } from './localApi'
 
 /** Stable empty record so the initial state does not change identity per render. */
 const NO_CHOICES: PluginChoices = {}
@@ -56,6 +57,7 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
   const [choices, setChoices] = useState<PluginChoices>(NO_CHOICES)
   const [prefs, setPrefs] = useState<PluginPrefsMap>(NO_PREFS)
   const [loaded, setLoaded] = useState(false)
+  const launchAccess = useLaunchAccess()
 
   // Load the persisted choices once. Until they arrive every plugin sits at
   // its own default, which is what a fresh profile means anyway.
@@ -84,8 +86,9 @@ export const PluginProvider: React.FC<PluginProviderProps> = ({
   )
   const switchable = useMemo(() => available.filter(isPluginSwitchable), [available])
   const active = useMemo(
-    () => available.filter((p) => isPluginEnabled(p, choices)),
-    [available, choices],
+    () => available.filter((p) =>
+      isPluginEnabled(p, choices) || (p.manifest.launchEndpoint && launchAccess.includes(p.manifest.launchEndpoint))),
+    [available, choices, launchAccess],
   )
   const contributions = useMemo(() => collectContributions(active), [active])
 

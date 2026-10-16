@@ -12,12 +12,13 @@ import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { spawn } from 'node:child_process'
-import { TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
-import type { AppQuitResponse, LocalApiInfoFile } from '@cuemol/console-kit'
+import { configDirectory, CUEMOL_MCP_FLAG, TRITIUM_CLI_FLAG } from '@cuemol/console-kit'
+import type { AppQuitResponse, LocalApiEndpoint, LocalApiInfoFile } from '@cuemol/console-kit'
 
 /** Where the app writes its port and token. */
 export function infoFilePath(env: NodeJS.ProcessEnv = process.env): string {
-  return env.CUEMOL_LOCAL_API_INFO || path.join(os.homedir(), '.cuemol', 'local-api.json')
+  return env.CUEMOL_LOCAL_API_INFO || path.resolve(configDirectory(os.homedir(), env),
+    env.CUEMOL_HEADLESS === '1' ? 'local-api-headless.json' : 'local-api.json')
 }
 
 export const NOT_RUNNING =
@@ -25,14 +26,19 @@ export const NOT_RUNNING =
   '(Settings > Plugins > Console > Command line access).'
 
 /** The connection info, or an Error saying why there is none. */
-export function readInfo(file = infoFilePath()): LocalApiInfoFile | Error {
+export function readInfo(file = infoFilePath(), endpoint: LocalApiEndpoint = 'console'): LocalApiInfoFile | Error {
   let info: LocalApiInfoFile
   try {
     info = JSON.parse(fs.readFileSync(file, 'utf8')) as LocalApiInfoFile
   } catch {
     return new Error(NOT_RUNNING)
   }
-  if (!Array.isArray(info.endpoints) || !info.endpoints.includes('console')) return new Error(NOT_RUNNING)
+  if (!info || !Array.isArray(info.endpoints) || !info.endpoints.includes(endpoint)) {
+    return new Error(endpoint === 'console' ? NOT_RUNNING : 'CueMol is not running, or MCP access is off.')
+  }
+  if (!Number.isInteger(info.port) || info.port < 1 || info.port > 65535 || typeof info.token !== 'string' || !info.token) {
+    return new Error('Invalid CueMol local API info file.')
+  }
   return info
 }
 
@@ -47,8 +53,8 @@ export function alive(pid: number): boolean {
 }
 
 /** Info for a live app with the console endpoint open, or null. */
-function liveInfo(file: string): LocalApiInfoFile | null {
-  const info = readInfo(file)
+function liveInfo(file: string, endpoint: LocalApiEndpoint): LocalApiInfoFile | null {
+  const info = readInfo(file, endpoint)
   if (info instanceof Error) return null
   // A crashed app leaves its file behind.
   if (typeof info.pid === 'number' && !alive(info.pid)) return null
@@ -58,10 +64,43 @@ function liveInfo(file: string): LocalApiInfoFile | null {
 const START_TIMEOUT_MS = 90_000
 
 /** Starts a program that outlives this process. */
-export type Launch = (command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string) => void
+export type Launch = (command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string) => void | Promise<void>
 
-function spawnDetached(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string): void {
-  spawn(command, args, { detached: true, stdio: 'ignore', env, cwd }).unref()
+function spawnDetached(command: string, args: string[], env: NodeJS.ProcessEnv, cwd?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let log: number | undefined
+    try {
+      if (env.CUEMOL_LAUNCH_LOG) {
+        fs.mkdirSync(path.dirname(env.CUEMOL_LAUNCH_LOG), { recursive: true, mode: 0o700 })
+        log = fs.openSync(env.CUEMOL_LAUNCH_LOG, 'a', 0o600)
+      }
+      const child = spawn(command, args, {
+        detached: true, stdio: ['ignore', log ?? 'ignore', log ?? 'ignore'], env, cwd,
+      })
+      child.once('error', reject)
+      child.once('spawn', () => { child.unref(); resolve() })
+    } catch (error) {
+      reject(error)
+    } finally {
+      if (log !== undefined) fs.closeSync(log)
+    }
+  })
+}
+
+/** Use a virtual X11 display when Linux has no desktop session. */
+export function headlessLaunch(command: string, args: string[], env: NodeJS.ProcessEnv, platform = process.platform): { command: string; args: string[] } {
+  if (env.CUEMOL_HEADLESS !== '1' || platform !== 'linux' || env.DISPLAY || env.WAYLAND_DISPLAY) {
+    return { command, args }
+  }
+  const available = (env.PATH || '').split(path.delimiter).some((directory) => {
+    try { fs.accessSync(path.join(directory, 'xvfb-run'), fs.constants.X_OK); return true } catch { return false }
+  })
+  if (!available) throw new Error('Headless Linux requires xvfb-run. Install Xvfb and xauth, then retry with --headless.')
+  return {
+    command: 'xvfb-run',
+    args: ['--auto-servernum', '--server-args=-screen 0 1400x900x24', command, ...args,
+      '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+  }
 }
 
 /**
@@ -74,12 +113,12 @@ function spawnDetached(command: string, args: string[], env: NodeJS.ProcessEnv, 
  * `pnpm run start` starts it (without rebuilding). electron-vite hands what
  * follows `--` to the app.
  */
-function launchCommand(env: NodeJS.ProcessEnv, execPath: string): { command: string; args: string[]; cwd?: string } | null {
-  if (env.ELECTRON_RUN_AS_NODE) return { command: execPath, args: [TRITIUM_CLI_FLAG] }
+function launchCommand(env: NodeJS.ProcessEnv, execPath: string, args: string[]): { command: string; args: string[]; cwd?: string } | null {
+  if (env.ELECTRON_RUN_AS_NODE) return { command: execPath, args }
   if (env.TRITIUM_CLI_DEV_APP) {
     return {
       command: 'pnpm',
-      args: ['exec', 'electron-vite', 'preview', '--skipBuild', '--', TRITIUM_CLI_FLAG],
+      args: ['exec', 'electron-vite', 'preview', '--skipBuild', '--', ...args],
       cwd: env.TRITIUM_CLI_DEV_APP,
     }
   }
@@ -87,6 +126,7 @@ function launchCommand(env: NodeJS.ProcessEnv, execPath: string): { command: str
 }
 
 export interface EnsureAppOptions {
+  endpoint?: LocalApiEndpoint
   env?: NodeJS.ProcessEnv
   execPath?: string
   file?: string
@@ -94,6 +134,19 @@ export interface EnsureAppOptions {
   onStart?: () => void
   timeoutMs?: number
   pollMs?: number
+}
+
+/** Start the GUI with file arguments or an explicit local API request. */
+export async function launchApp(args: string[], {
+  env = process.env, execPath = process.execPath, launch = spawnDetached,
+}: Pick<EnsureAppOptions, 'env' | 'execPath' | 'launch'> = {}): Promise<void> {
+  const how = launchCommand(env, execPath, args)
+  if (!how) throw new Error('Run the packaged cuemol command, or set TRITIUM_CLI_DEV_APP for a development build.')
+  const appEnv = { ...env }
+  delete appEnv.ELECTRON_RUN_AS_NODE
+  delete appEnv.TRITIUM_CLI_DEV_APP
+  const headless = headlessLaunch(how.command, how.args, appEnv)
+  await launch(headless.command, headless.args, appEnv, how.cwd)
 }
 
 /**
@@ -107,6 +160,7 @@ export interface EnsureAppOptions {
  * Error saying why not.
  */
 export async function ensureApp({
+  endpoint = 'console',
   env = process.env,
   execPath = process.execPath,
   file = infoFilePath(env),
@@ -115,20 +169,15 @@ export async function ensureApp({
   timeoutMs = START_TIMEOUT_MS,
   pollMs = 300,
 }: EnsureAppOptions = {}): Promise<void> {
-  if (liveInfo(file)) return
-  const how = launchCommand(env, execPath)
-  if (!how) throw new Error(NOT_RUNNING)
-  const appEnv = { ...env }
-  delete appEnv.ELECTRON_RUN_AS_NODE
-  delete appEnv.TRITIUM_CLI_DEV_APP
+  if (liveInfo(file, endpoint)) return
   onStart()
-  launch(how.command, how.args, appEnv, how.cwd)
+  await launchApp([endpoint === 'mcp' ? CUEMOL_MCP_FLAG : TRITIUM_CLI_FLAG], { env, execPath, launch })
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     await new Promise((r) => setTimeout(r, pollMs))
-    if (liveInfo(file)) return
+    if (liveInfo(file, endpoint)) return
   }
-  throw new Error('CueMol3 did not open command line access in time (is the Console plugin turned off?).')
+  throw new Error(`CueMol3 did not open the ${endpoint} endpoint in time.`)
 }
 
 /**

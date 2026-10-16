@@ -11,11 +11,11 @@
 import { app } from 'electron'
 import type { BrowserWindow } from 'electron'
 import * as fs from 'fs'
-import * as os from 'os'
 import * as nodePath from 'path'
 import { randomBytes } from 'crypto'
 import { IPC } from '@shared/ipcChannels'
-import { DEFAULT_LOCAL_API_PORT, TRITIUM_CLI_FLAG } from '@shared/types/localApi'
+import { DEFAULT_LOCAL_API_PORT, launchEndpoints } from '@shared/types/localApi'
+import type { LocalApiEndpoint } from '@shared/types/localApi'
 import { handleInvoke } from '../ipc/handleInvoke'
 import { secretId } from '../secretStore'
 import { saveSecretEnc } from '../stateStore'
@@ -27,6 +27,8 @@ import { mcpEndpoint } from './mcpEndpoint'
 import { makeLocalApiRelay } from './relay'
 import { createLocalApiServer } from './server'
 import type { LocalApiServer } from './server'
+import { isHeadless } from '../headless'
+import { getConfigDirectory } from '../configDirectory'
 
 /**
  * Where the token is kept between runs: a plain file readable by this user
@@ -46,12 +48,12 @@ function tokenFile(): string {
 const LEGACY_TOKEN_REF = { namespace: 'localApi', key: 'token' } as const
 
 /**
- * Where a command-line client finds the port and token. In the home
- * directory rather than userData, so a client needs no knowledge of the
- * app's name or of how it was launched; overridable for a second instance.
+ * Where a command-line client finds the port and token, outside the
+ * session-specific profile; overridable for a second instance.
  */
 export function localApiInfoFile(): string {
-  return process.env.CUEMOL_LOCAL_API_INFO || nodePath.join(os.homedir(), '.cuemol', 'local-api.json')
+  return process.env.CUEMOL_LOCAL_API_INFO || nodePath.join(getConfigDirectory(),
+    isHeadless() ? 'local-api-headless.json' : 'local-api.json')
 }
 
 let token = ''
@@ -81,18 +83,21 @@ function newToken(): string {
 
 let server: LocalApiServer | null = null
 
-/** Whether tritium_cli launched this run of the app (or a second instance of it). */
-let cliAccess = false
+/** Access explicitly requested for this run, including second-instance launches. */
+const launchAccess = new Set<LocalApiEndpoint>()
 
 /**
- * Note a command line that carries TRITIUM_CLI_FLAG. Called with the app's own
+ * Note command-line access requests. Called with the app's own
  * argv before any window exists (the window asks later) and with a second
  * instance's (the window is told). Never turned back off for the run.
  */
 export function noteCliLaunch(argv: readonly string[]): void {
-  if (cliAccess || !argv.includes(TRITIUM_CLI_FLAG)) return
-  cliAccess = true
-  getMainWindow()?.webContents.send(IPC.LOCAL_API_CLI_ACCESS_GRANTED)
+  const added = launchEndpoints(argv).filter((endpoint) => !launchAccess.has(endpoint))
+  if (added.length === 0) return
+  for (const endpoint of added) launchAccess.add(endpoint)
+  const window = getMainWindow()
+  window?.webContents.send(IPC.LOCAL_API_LAUNCH_ACCESS_CHANGED, [...launchAccess])
+  if (added.includes('console')) window?.webContents.send(IPC.LOCAL_API_CLI_ACCESS_GRANTED)
 }
 
 /** Register the local API channels; the server is created closed. */
@@ -103,14 +108,15 @@ export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
     handlers: [mcpEndpoint(relay, app.getVersion()), consoleEndpoint(relay), appEndpoint(quitApp)],
     token: () => token,
     // The owning plugin sends its stored port before switching an endpoint on.
-    port: DEFAULT_LOCAL_API_PORT,
+    port: isHeadless() ? 0 : DEFAULT_LOCAL_API_PORT,
     infoFile: localApiInfoFile(),
   })
   const srv = server
 
   handleInvoke(IPC.LOCAL_API_REPLY, (_e, p) => relay.reply(p))
   handleInvoke(IPC.LOCAL_API_STATUS, () => srv.status())
-  handleInvoke(IPC.LOCAL_API_CLI_ACCESS, () => cliAccess)
+  handleInvoke(IPC.LOCAL_API_CLI_ACCESS, () => launchAccess.has('console'))
+  handleInvoke(IPC.LOCAL_API_LAUNCH_ACCESS, () => [...launchAccess])
   handleInvoke(IPC.LOCAL_API_CONTROL, async (_e, req) => {
     switch (req.action) {
       case 'endpoint':
@@ -119,6 +125,7 @@ export function registerLocalApiHandlers(mainWindow: BrowserWindow): void {
         token = newToken()
         return srv.refresh()
       case 'setPort':
+        if (isHeadless()) return srv.status()
         if (!Number.isInteger(req.port) || req.port < 1024 || req.port > 65535) return srv.status()
         return srv.setPort(req.port)
     }

@@ -1,7 +1,7 @@
 {
   "name": "@cuemol/tritium-cli",
   "version": "1.0.0",
-  "description": "tritium_cli: the console's command line for a running CueMol, over its local API server",
+  "description": "CueMol GUI launcher, console, MCP bridge, and agent instructions",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@cuemol/console-kit": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@types/node": "^20.17.6",
     "esbuild": "^0.25.12",
     "typescript": "^5.7.2",
