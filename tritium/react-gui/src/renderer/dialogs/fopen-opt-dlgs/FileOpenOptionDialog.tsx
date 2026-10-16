@@ -131,6 +131,7 @@ export const FileOpenOptionDialog: React.FC<FileOpenOptionDialogProps> = ({
     rendererTypes,
     presetTypes,
     objectName: baseNameNoExt(filePath),
+    preferMoleculePreset: true,
   });
 
   // Format-specific option state stays dialog-local.

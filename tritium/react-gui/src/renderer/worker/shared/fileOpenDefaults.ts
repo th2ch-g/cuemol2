@@ -62,6 +62,15 @@ export function formatKindForReader(readerName: string): FormatKind {
 /** The renderer a molecule starts with. */
 const MOLECULE_RENDERER = 'simple'
 
+/** Shared style preset for newly loaded molecular objects. */
+export const MOLECULE_PRESET = 'AutoRendPreset'
+
+/** Choose the molecular preset only when all of its renderer types are supported. */
+export function initialRendererPreset(types: readonly string[]): string | undefined {
+  return ['cartoon', 'ribbon', 'ballstick'].every((type) => types.includes(type))
+    ? MOLECULE_PRESET : undefined
+}
+
 /**
  * The renderer a freshly loaded object starts with, when nobody chose one.
  *
@@ -69,8 +78,8 @@ const MOLECULE_RENDERER = 'simple'
  * the object itself reports -- `contour` for a density map, `molsurf` for a
  * surface. Never a fixed `simple` for everything: C++ `createRenderer` does
  * not check compatibility, so a map given `simple` loads drawing nothing.
- * One rule for the File Open dialog (when it has no history for the object
- * type) and for every load without a dialog (console, MCP, agent).
+ * This is the fallback when no molecular preset is available, or a caller
+ * asks for a single renderer instead of a preset.
  *
  * @param types - the object's compatible types, as `getCompatibleRendererNames`
  *   lists them (already narrowed to the ones worth creating at load)

@@ -311,6 +311,12 @@
 
   <!-- ===== Renderer Presets ===== -->
 
+  <style id="AutoRendPreset" type="MolCoord-rendpreset" desc="Automatic molecular view">
+    <renderer type="cartoon" sel="protein" style="DefaultCartoon,DefaultHSCPaint"/>
+    <renderer type="ribbon" sel="nucleic" style="DefaultRibbon,DefaultHSCPaint"/>
+    <renderer type="ballstick" sel="!nucleic&amp;!protein" style="DefaultBallStick,DefaultCPKColoring"/>
+  </style>
+
   <style id="Default1RendPreset" type="MolCoord-rendpreset" desc="Default preset 1">
     <renderer type="ribbon" sel="protein" style="DefaultRibbon,DefaultHSCPaint"/>
     <renderer type="nucl" sel="nucleic" style="DefaultNucl"/>

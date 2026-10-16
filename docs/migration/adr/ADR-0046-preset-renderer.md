@@ -16,7 +16,7 @@ UXP の Setup Renderer ダイアログには、style に定義された preset (
 
 1. **判定は `/RendPreset$/` 正規表現でなく明示フィールド** — `presetName` の有無。二重規約 (JS 側は名前 suffix、C++ 側は type 属性) の JS 側を廃す。
 2. **既定名は短縮形** — `presetNamePrefix('Default1RendPreset') = 'default1_'` + `proposeUniqName` → `default1_1` (子は C++ が `name_prefix + type` で `default1_1ribbon` 等)。UXP の `Default1RendPreset1` は冗長なため。
-3. **既定選択は preset にしない** — preset は先頭 optgroup に表示するが、初期選択は従来どおり履歴 or 通常タイプ先頭 (UXP は `selectedIndex=0` で preset 既定)。履歴に preset 名が入った場合は membership 判定つきで復元し、無効なら通常タイプ先頭へフォールバック。
+3. **Initial molecular file loads use `AutoRendPreset`** when cartoon, ribbon, and ballstick are compatible. Protein uses cartoon, nucleic acid uses ribbon, and other atoms use ballstick. An explicit saved GUI choice wins; New Renderer keeps its existing selection behavior. Headless loads use the same preset unless a renderer or restricted selection is specified.
 4. **group 内の New Renderer では preset 非表示** — preset は自分の group を作るためネスト不可。`getNewRendererOptions` が `groupName` 非空で `presetTypes: []` を返し、`createRendererOnObject` も preset + groupName の `rend.group` 代入を拒否 (二重防御)。UXP は無ガードで group 内 preset が作れてしまっていた。
 5. **preset 分岐では applyStyles / sel / name 再設定を skip** — UXP は共通処理を通すが、`setDefaultStyles` は `*group` に実質 no-op、sel は RendGroup に存在せず無視、name は C++ の `setName(grp_name)` 済み。挙動は同一のまま無駄を省く。
 6. **preset 選択中は Selection UI を disable** — UXP は有効のまま黙って無視していた。centerView は `RendGroup::getCenter` (メンバー重心) が機能するため有効のまま。

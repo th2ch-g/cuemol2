@@ -29,7 +29,7 @@ import {
     type SetStateAction,
 } from 'react';
 import { useCueMol } from '@renderer/hooks/cuemol/useCueMol';
-import { initialRendererType } from '@renderer/worker/shared/fileOpenDefaults';
+import { initialRendererType, initialRendererPreset } from '@renderer/worker/shared/fileOpenDefaults';
 import type { PresetTypeEntry, RendererOptions } from './types';
 import { getDefaultRendType, setDefaultRendType } from './rendTypeHistory';
 import { pushHistory } from '@renderer/h3-kit/MolSelList';
@@ -45,6 +45,8 @@ export interface UseRendererOptionsArgs {
     rendererTypes: string[];
     /** Renderer presets offered in the dropdown's Presets optgroup. */
     presetTypes?: PresetTypeEntry[];
+    /** File loading may choose the molecular preset when there is no saved choice. */
+    preferMoleculePreset?: boolean;
     /** Seed for `options.objectName`. */
     objectName: string;
     /** Optional seed for `options.rendererName` (the name-follow effect
@@ -70,20 +72,15 @@ export interface UseRendererOptionsResult {
 export function useRendererOptions(
     args: UseRendererOptionsArgs,
 ): UseRendererOptionsResult {
-    const { visible, sceneId, objClassName, rendererTypes, presetTypes,
+    const { visible, sceneId, objClassName, rendererTypes, presetTypes, preferMoleculePreset,
         objectName, initialRendererName, initialSelection } = args;
     const { cm } = useCueMol();
 
     const presets = useMemo(() => presetTypes ?? [], [presetTypes]);
 
-    // Initial pick: the history value when it is still offered -- it may
-    // name a preset or a plain renderer type -- else the first compatible
-    // type. Presets are never the default without history (deliberate
-    // deviation from UXP, which preselected the first preset; ADR-0046).
+    // Restore an explicit choice before applying the file-load default.
     const initialPick = useMemo(() => {
-        // Without history: what this kind of object starts with (`simple`
-        // for a molecule, else the object's first type), as a load without
-        // the dialog picks it.
+        // Keep a compatible single-renderer fallback for unavailable presets.
         const first = initialRendererType(rendererTypes);
         const hist = getDefaultRendType(objClassName);
         if (hist) {
@@ -94,8 +91,9 @@ export function useRendererOptions(
                 return { rendererType: hist, presetName: undefined };
             }
         }
-        return { rendererType: first, presetName: undefined };
-    }, [rendererTypes, presets, objClassName]);
+        const preset = preferMoleculePreset ? initialRendererPreset(rendererTypes) : undefined;
+        return { rendererType: first, presetName: presets.some((p) => p.name === preset) ? preset : undefined };
+    }, [rendererTypes, presets, objClassName, preferMoleculePreset]);
 
     const buildOptions = useCallback((): RendererOptions => {
         const seedSel = (initialSelection ?? '').trim();

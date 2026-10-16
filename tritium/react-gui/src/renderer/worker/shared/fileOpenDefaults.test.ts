@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { initialRendererType } from './fileOpenDefaults'
+import { initialRendererType, initialRendererPreset } from './fileOpenDefaults'
 
 describe('initialRendererType', () => {
   it('gives a molecule simple, and anything else the first type it reports', () => {
@@ -15,4 +15,10 @@ describe('initialRendererType', () => {
     expect(initialRendererType(['molsurf'])).toBe('molsurf')
     expect(initialRendererType([])).toBe('')
   })
+})
+
+it('selects the molecular preset only for objects supporting every representation', () => {
+  expect(initialRendererPreset(['simple', 'ribbon', 'cartoon', 'ballstick'])).toBe('AutoRendPreset')
+  expect(initialRendererPreset(['contour', 'isosurf'])).toBeUndefined()
+  expect(initialRendererPreset(['simple', 'cartoon'])).toBeUndefined()
 })

@@ -15,6 +15,13 @@ Powered by [Mozilla XULRunner](http://www.mozilla.org/projects/mozilla-based.htm
 the application framework of Firefox and Thunderbird (and other mozilla-based application as well),
 CueMol2 now runs under both Windows, MacOS X, and Linux in a similar GUI appearance.
 
+CueMol3 molecular display
+--------------------------------------
+
+New molecular files initially show proteins as cartoons, nucleic acids as
+ribbons, and other atoms as ball-and-stick. A saved GUI renderer choice or an
+explicit renderer takes precedence; saved scenes keep their representations.
+
 License
 --------------------------------------
 **CueMol** is distributed with **NO WARRANTY**.

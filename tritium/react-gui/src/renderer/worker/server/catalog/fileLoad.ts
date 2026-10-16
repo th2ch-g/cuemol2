@@ -75,7 +75,7 @@ export interface LoadArgs {
 /** The renderer arguments of `LoadArgs`, as op parameters (each load op spreads these in). */
 export const LOAD_RENDERER_PARAMS = {
   rendererName: optional(string('Name of the renderer. Null uses <type>1.')),
-  preset: optional(string('Draw it with this renderer preset (a group), instead of rendererType. Null draws one renderer.')),
+  preset: optional(string('Draw it with this renderer preset (a group), instead of rendererType. Null keeps the default: a molecular preset, or one renderer for maps and surfaces.')),
   centerView: optional(boolean('False leaves the view where it is. Null or true centres it on the new object.')),
   mapCenterPolicy: optional(
     enumOf(

@@ -167,6 +167,22 @@ describe('FileOpenOptionDialog (UXP parity)', () => {
         handle.unmount()
     })
 
+    it('starts fresh molecular loads with the automatic preset and honors a saved renderer choice', async () => {
+        const props = {
+            rendererTypes: ['simple', 'ribbon', 'cartoon', 'ballstick'],
+            presetTypes: [{ name: 'AutoRendPreset', desc: 'Automatic molecular representations' }],
+        }
+        let handle = mount(props)
+        await flushPromises()
+        expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('AutoRendPreset')
+        handle.unmount()
+        setDefaultRendType('MolCoord', 'ballstick')
+        handle = mount(props)
+        await flushPromises()
+        expect(controlByLabel<HTMLSelectElement>('Renderer type', 'select').value).toBe('ballstick')
+        handle.unmount()
+    })
+
     it('on mount: requests unique object name with tryBare + suffix:parens', async () => {
         const handle = mount()
         await flushPromises()

@@ -24,6 +24,7 @@ import {
   formatKindForReader,
   getDefaultRendererOptions,
   initialRendererType,
+  initialRendererPreset,
   mapReaderDefaultsToFormatOptions,
 } from '@renderer/worker/shared/fileOpenDefaults'
 import { getReaderDefaultOptions } from './getReaderDefaultOptions'
@@ -34,7 +35,7 @@ export interface HeadlessOpenArgs {
   readerName: string
   /** Name for the new object; also seeds the renderer name. */
   objectName: string
-  /** Renderer to create, or null for the object type's default (`initialRendererType`). */
+  /** Renderer to create, or null for the object type's default preset or renderer. */
   rendererType: string | null
   /** The file being loaded, if any; only to ask its reader's object what it can show. */
   filePath?: string
@@ -54,16 +55,22 @@ export function buildHeadlessFileOpenOptions(
     : buildDefaultFormatOptions(kind)
 
   // Not chosen: what this kind of object starts with, not a molecule's `simple`.
-  const rendererType = args.rendererType ??
-    initialRendererType(getCompatibleRendererNames(ctx, { filePath: args.filePath ?? '', readerName: args.readerName }).types)
+  const types = args.rendererType === null
+    ? getCompatibleRendererNames(ctx, { filePath: args.filePath ?? '', readerName: args.readerName }).types
+    : []
+  const rendererType = args.rendererType ?? initialRendererType(types)
   const renderer = getDefaultRendererOptions(args.objectName, rendererType || undefined)
+  // Presets own their selections; an explicit selection must remain authoritative.
+  const presetName = args.rendererType === null && (args.selection === null || args.selection === '*')
+    ? initialRendererPreset(types) : undefined
 
   return {
     format,
     renderer: {
       ...renderer,
       objectName: args.objectName,
-      rendererName: `${renderer.rendererType}1`,
+      rendererName: presetName ? 'auto1' : `${renderer.rendererType}1`,
+      presetName,
       selectionEnabled: args.selection !== null,
       selection: args.selection ?? '*',
       centerView: true,

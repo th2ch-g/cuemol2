@@ -17,10 +17,16 @@ def setupDefaultRenderer(obj):
     scene = obj.getScene()
 
     with cm.UndoTxn("Create default renderer", scene):
-        rend = obj.createRenderer("simple")
-        rend.applyStyles("DefaultCPKColoring")
-        rend.name = "simple1"
-        rend.sel = cm.sel("*")
+        types = obj.searchCompatibleRendererNames().split(",")
+        if all(kind in types for kind in ("cartoon", "ribbon", "ballstick")):
+            rend = obj.createPresetRenderer("AutoRendPreset", "auto1", "auto1_")
+        else:
+            kind = "simple" if "simple" in types else next(
+                kind for kind in types if kind and not kind.startswith("*")
+            )
+            rend = obj.createRenderer(kind)
+            set_default_styles(rend)
+            rend.name = kind + "1"
         print("active view ID=" + str(scene.activeViewID))
         view = cm.view(scene)
         if view is None:
