@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.27,<2", "packaging>=24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cuemol"
+dynamic = ["version"]
+description = "CueMol molecular visualization desktop application and command line"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+readme = "README.md"
+
+[project.urls]
+Homepage = "https://www.cuemol.org/"
+Source = "https://github.com/CueMol/cuemol2"
+
+[project.scripts]
+cuemol = "cuemol_launcher:main"
+
+[tool.hatch.version]
+path = "cuemol_launcher/runtime.json"
+pattern = '"version": "(?P<version>[^"]+)"'
+
+[tool.hatch.build.targets.wheel]
+packages = ["cuemol_launcher"]
+
+[tool.hatch.build.hooks.custom]

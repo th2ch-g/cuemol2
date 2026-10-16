@@ -93,9 +93,9 @@ quarantine が付かないので、警告は出ない。
 の Phase 4 を参照（`electron-builder.yml` の `win.certificateFile` / `win.azureSignOptions`
 を差し込み、`CSC_*` を CI secret 化する設計になっている）。
 
-## Command archives
+## Command archives and desktop wheels
 
-The packaging flow also builds complete command archives.
+The packaging flow also builds complete command archives and platform wheels.
 It requires `uv` with Python 3.12 or later. See the
 [command distribution guide](command-distribution.md) for installation,
-artifact names, supported targets, and update behavior.
+artifact names, supported targets, update behavior, and offline validation.

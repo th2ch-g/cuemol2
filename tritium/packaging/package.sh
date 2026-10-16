@@ -62,7 +62,10 @@ if [ -n "$BUILD_NO" ]; then
   EB_ARGS+=(--config.buildVersion="$BUILD_NO")
 fi
 CUEMOL_PACKAGE_COMMANDS=1 pnpm exec electron-builder "${EB_ARGS[@]}"
-uv run --no-project --python 3.12 python \
+uv run --no-project --python 3.12 --with 'hatchling>=1.27,<2' python \
   "$SCRIPT_DIR/package-command.py" "$REACT_GUI/release/command-build.json"
+for wheel in "$REACT_GUI/release/cuemol-$QM_VERSION-"*.whl; do
+  uv run --no-project --python 3.12 python "$SCRIPT_DIR/smoke-wheel.py" "$wheel"
+done
 
 echo "package: done ($*)."

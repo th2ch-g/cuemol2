@@ -1,18 +1,21 @@
-"""Build a complete command archive from an electron-builder app."""
+"""Build a command archive and a self-contained wheel from an electron-builder app."""
 
 import argparse
 import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
+import sys
 import tarfile
 import tempfile
 
 
 PLATFORMS = {
-    ("darwin", "arm64"): "macOS-arm64",
-    ("linux", "x64"): "Linux-x64",
-    ("win32", "x64"): "Windows-x64",
+    ("darwin", "arm64"): ("macOS-arm64", "macosx_15_0_arm64"),
+    ("linux", "x64"): ("Linux-x64", "linux_x86_64"),
+    ("win32", "x64"): ("Windows-x64", "win_amd64"),
 }
 
 
@@ -26,7 +29,7 @@ def checksum(path):
 def build(manifest_path):
     manifest = json.loads(manifest_path.read_text())
     platform, arch = manifest["platform"], manifest["arch"]
-    label = PLATFORMS[(platform, arch)]
+    label, wheel_platform = PLATFORMS[(platform, arch)]
     version = manifest["version"]
     if not re.fullmatch(r"\d+\.\d+\.\d+\.\d+", version):
         raise ValueError("Expected a four-component CueMol version")
@@ -70,8 +73,24 @@ def build(manifest_path):
             bundle.add(source, arcname=runtime_dir)
             bundle.add(bin_dir, arcname="bin")
             bundle.add(license_file, arcname="LICENSE")
-        checksum(archive)
-    return (archive,)
+        metadata = {
+            "version": version, "platform_tag": wheel_platform,
+            "executable": executable, "cli": cli, "sha256": checksum(archive),
+        }
+        project = staging / "python"
+        shutil.copytree(Path(__file__).parent / "python", project, ignore=shutil.ignore_patterns("__pycache__"))
+        shutil.copyfile(license_file, project / "LICENSE")
+        package = project / "cuemol_launcher"
+        shutil.copyfile(archive, package / "runtime.tar.gz")
+        (package / "runtime.json").write_text(json.dumps(metadata, indent=2) + "\n")
+        subprocess.run([sys.executable, "-m", "hatchling", "build", "-t", "wheel"], cwd=project, check=True)
+        wheels = list((project / "dist").glob("*.whl"))
+        if len(wheels) != 1:
+            raise RuntimeError("Expected exactly one wheel")
+        wheel = output / wheels[0].name
+        shutil.copyfile(wheels[0], wheel)
+        checksum(wheel)
+    return archive, wheel
 
 
 if __name__ == "__main__":

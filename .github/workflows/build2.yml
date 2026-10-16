@@ -223,7 +223,7 @@ jobs:
     # Package the tritium Electron app (macOS arm64 DMG, ad-hoc signed).
     # Runs only on the arm64 non-embed-Python leg, in full mode (develop /
     # workflow_dispatch / tags) -- not on every feature-branch push.
-    - name: Set up uv for command archives
+    - name: Set up uv for desktop wheels
       if: matrix.os == 'macos-15' && matrix.embed-python == '' && env.BUILD_MODE == 'full'
       uses: astral-sh/setup-uv@v6
       with:
@@ -247,6 +247,7 @@ jobs:
         path: |
           tritium/react-gui/release/*.dmg
           tritium/react-gui/release/*-Command.tar.gz
+          tritium/react-gui/release/*.whl
           tritium/react-gui/release/*.sha256
         if-no-files-found: error
 
@@ -422,7 +423,7 @@ jobs:
 
     # Package the tritium Electron app (Windows x64 NSIS installer, unsigned).
     # Full mode only (develop / workflow_dispatch / tags).
-    - name: Set up uv for command archives
+    - name: Set up uv for desktop wheels
       if: env.BUILD_MODE == 'full'
       uses: astral-sh/setup-uv@v6
       with:
@@ -446,6 +447,7 @@ jobs:
         path: |
           tritium/react-gui/release/*.exe
           tritium/react-gui/release/*-Command.tar.gz
+          tritium/react-gui/release/*.whl
           tritium/react-gui/release/*.sha256
         if-no-files-found: error
 

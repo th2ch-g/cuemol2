@@ -214,7 +214,7 @@ jobs:
       shell: bash
       run: sudo apt-get update && sudo apt-get install -y libfuse2
 
-    - name: Set up uv for command archives
+    - name: Set up uv for desktop wheels
       if: env.DO_PACKAGE == 'true'
       uses: astral-sh/setup-uv@v6
       with:
@@ -237,6 +237,7 @@ jobs:
           tritium/react-gui/release/*.AppImage
           tritium/react-gui/release/*.deb
           tritium/react-gui/release/*-Command.tar.gz
+          tritium/react-gui/release/*.whl
           tritium/react-gui/release/*.sha256
         if-no-files-found: error
 
@@ -255,4 +256,5 @@ jobs:
           tritium/react-gui/release/*.AppImage
           tritium/react-gui/release/*.deb
           tritium/react-gui/release/*-Command.tar.gz
+          tritium/react-gui/release/*.whl
           tritium/react-gui/release/*.sha256

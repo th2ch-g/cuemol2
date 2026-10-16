@@ -1,0 +1,34 @@
+name: Check command packaging
+
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - install.sh
+      - tritium/packaging/**
+      - .github/workflows/command-packaging.yml
+  push:
+    paths:
+      - pyproject.toml
+      - install.sh
+      - tritium/packaging/**
+      - .github/workflows/command-packaging.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, macos-15, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Check command packaging and updates
+        run: uv run --no-project --with pytest --with "hatchling>=1.27,<2" python -m pytest tritium/packaging/tests -q
